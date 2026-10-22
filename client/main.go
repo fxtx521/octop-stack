@@ -143,10 +143,18 @@ func str(v any) string {
 	return ""
 }
 
+// version 由构建时 -ldflags 注入
+var version = "dev"
+
 func main() {
+	ver := flag.Bool("version", false, "打印版本")
 	base := flag.String("url", "http://127.0.0.1:8099", "Octop 服务地址")
 	ws := flag.String("ws", "", "本地工作区目录(不设则纯对话, 不碰本地文件)")
 	flag.Parse()
+	if *ver {
+		fmt.Println("octop-client", version)
+		return
+	}
 
 	reader := bufio.NewReader(os.Stdin)
 	prompt := func(label string) string {
