@@ -213,7 +213,10 @@ func main() {
 	if wsEval != "" {
 		fmt.Println("文件操作模式: 专家可在工作区内读写, 每次需你批准")
 	}
-	fmt.Println("输入问题开始对话, 输入 exit 退出")
+	fmt.Println("输入问题开始对话, 输入 账单 查token用量, exit 退出")
+	if s, err := client.fetchUsageSummary(); err == nil {
+		fmt.Println(s)
+	}
 
 	var lastThread string
 	for {
@@ -223,6 +226,15 @@ func main() {
 		}
 		if q == "exit" || q == "退出" {
 			break
+		}
+		if q == "账单" || q == "usage" {
+			if s, err := client.fetchUsageSummary(); err == nil {
+				fmt.Println(s)
+			} else {
+				fmt.Println("❌ 查账失败:", err)
+			}
+			fmt.Println()
+			continue
 		}
 		// 带工作区上下文提问
 		msg := q
@@ -266,3 +278,56 @@ func main() {
 }
 
 // readPassword 保留给未来终端模式(交互式不回显), 管道模式统一走ReadString
+
+// fetchUsageSummary 查当前用户token用量(官方 /api/usage/summary)
+func (c *OctopClient) fetchUsageSummary() (string, error) {
+	req, _ := http.NewRequest("GET", c.BaseURL+"/api/usage/summary?window=all&granularity=total", nil)
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return "", fmt.Errorf("usage HTTP %d: %s", resp.StatusCode, string(body))
+	}
+	var u struct {
+		Window           string `json:"window"`
+		InputTokens      int64  `json:"input_tokens"`
+		UncachedInput    int64  `json:"uncached_input_tokens"`
+		CacheRead        int64  `json:"cache_read_tokens"`
+		OutputTokens     int64  `json:"output_tokens"`
+		TotalTokens      int64  `json:"total_tokens"`
+		ModelCalls       int    `json:"model_calls"`
+		Turns            int    `json:"turns"`
+		AvgPerTurn       int64  `json:"avg_per_turn"`
+		CacheHitPercent  int    `json:"cache_hit_percent"`
+	}
+	if err := json.Unmarshal(body, &u); err != nil {
+		return "", err
+	}
+	cacheNote := ""
+	if u.CacheRead > 0 {
+		cacheNote = fmt.Sprintf(" (缓存命中%d%%, 未重复计费的输入%d)", u.CacheHitPercent, u.UncachedInput)
+	}
+	return fmt.Sprintf("📊 我的token账单(累计)\n  总量: %s\n  输入: %s / 输出: %s%s\n  调用: %d次 · 对话轮: %d轮 · 平均每轮: %s",
+		humanNum(u.TotalTokens), humanNum(u.InputTokens), humanNum(u.OutputTokens), cacheNote,
+		u.ModelCalls, u.Turns, humanNum(u.AvgPerTurn)), nil
+}
+
+// humanNum 大数加逗号
+func humanNum(n int64) string {
+	s := fmt.Sprintf("%d", n)
+	if len(s) <= 3 {
+		return s
+	}
+	var out []byte
+	for i, b := range []byte(s) {
+		if i > 0 && (len(s)-i)%3 == 0 {
+			out = append(out, ',')
+		}
+		out = append(out, b)
+	}
+	return string(out)
+}
