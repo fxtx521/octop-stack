@@ -7,3 +7,6 @@ octop-login.txt
 octop-client
 octop-client.exe
 dist/
+client/octop-client
+client/client
+client/octop-client.exe
