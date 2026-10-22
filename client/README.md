@@ -33,8 +33,14 @@ Go 编写, 同一套代码编译 macOS / Windows。只调 Octop 官方 API（登
 - 沙箱单元测试 10 项全过 (逃逸/symlink/审批/留痕)
 - macOS (arm64) + Windows (amd64) 双构建通过
 
+## 记账
+
+- 登录后自动显示累计 token 账单, 对话中输入 账单 或 usage 随时刷新
+- 数据来自官方 GET /api/usage/summary, 只查自己的账
+- 显示: 总量/输入/输出/缓存命中/调用次数/轮数/平均每轮
+
 ## 下一步
 
-- [ ] token 记账展示
-- [ ] 打包成 .app / .exe 安装包
+- [ ] Windows 真机验证
+- [ ] 云端迁 VPS
 - [ ] 工作区清单增量更新 (当前每次全量)
