@@ -1,0 +1,6 @@
+*.db
+*.log
+.env
+*-pass*
+octop-login.txt
+.DS_Store
