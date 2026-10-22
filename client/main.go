@@ -145,6 +145,7 @@ func str(v any) string {
 
 func main() {
 	base := flag.String("url", "http://127.0.0.1:8099", "Octop 服务地址")
+	ws := flag.String("ws", "", "本地工作区目录(不设则纯对话, 不碰本地文件)")
 	flag.Parse()
 
 	reader := bufio.NewReader(os.Stdin)
@@ -157,6 +158,25 @@ func main() {
 	fmt.Print("密码: ")
 	password, _ := reader.ReadString('\n')
 	password = strings.TrimSpace(password)
+
+	// 工作区初始化(沙箱锚点)
+	var wsEval string
+	var manifest string
+	if *ws != "" {
+		ev, err := workspaceRootEval(*ws)
+		if err != nil {
+			fmt.Println("❌", err)
+			os.Exit(1)
+		}
+		wsEval = ev
+		m, err := buildManifest(ev)
+		if err != nil {
+			fmt.Println("❌ 清单生成失败:", err)
+			os.Exit(1)
+		}
+		manifest = m
+		fmt.Printf("📁 工作区: %s\n%s", ev, manifest)
+	}
 
 	client := NewClient(*base)
 	if err := client.Login(username, password); err != nil {
@@ -181,7 +201,13 @@ func main() {
 
 	// 选第一个专家, 进入对话循环
 	chosen := experts[0]
-	fmt.Printf("\n已连接专家: %s\n输入问题开始对话, 输入 exit 退出\n\n", chosen.Name)
+	fmt.Printf("\n已连接专家: %s\n", chosen.Name)
+	if wsEval != "" {
+		fmt.Println("文件操作模式: 专家可在工作区内读写, 每次需你批准")
+	}
+	fmt.Println("输入问题开始对话, 输入 exit 退出")
+
+	var lastThread string
 	for {
 		q := prompt("你> ")
 		if q == "" {
@@ -190,12 +216,44 @@ func main() {
 		if q == "exit" || q == "退出" {
 			break
 		}
-		ans, _, err := client.AskExpert(chosen.ExpertID, q)
+		// 带工作区上下文提问
+		msg := q
+		if wsEval != "" {
+			msg = q + "\n\n[本地工作区文件清单]\n" + manifest +
+				"\n如需操作文件, 请在回答末尾用 ```fileops 代码块输出JSON操作数组(op/path/body/to/reason), 只能用相对路径, 允许op: read/write/append/delete/move。不操作文件就不用输出该代码块。"
+		}
+		ans, thread, err := client.AskExpert(chosen.ExpertID, msg)
 		if err != nil {
 			fmt.Println("❌", err)
 			continue
 		}
+		if thread != "" {
+			lastThread = thread
+		}
+		_ = lastThread
 		fmt.Printf("AI> %s\n\n", ans)
+
+		// 解析操作计划
+		ops := ParseOps(ans)
+		if len(ops) == 0 {
+			continue
+		}
+		fmt.Println()
+		fmt.Println(FormatOpsPlan(ops))
+		approved := readUserConfirm(reader)
+		results := ExecuteOps(wsEval, ops, approved)
+		for _, r := range results {
+			switch r.Status {
+			case "done":
+				fmt.Printf("  ✅ %-6s %-20s %s\n", r.Op, r.Path, r.Detail)
+			case "rejected":
+				fmt.Printf("  ⛔ %-6s %-20s %s\n", r.Op, r.Path, r.Detail)
+			default:
+				fmt.Printf("  ❌ %-6s %-20s %s\n", r.Op, r.Path, r.Detail)
+			}
+		}
+		auditLog(wsEval, username, chosen.ExpertID, ops, results)
+		fmt.Println()
 	}
 }
 
