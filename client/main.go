@@ -136,6 +136,31 @@ func (c *OctopClient) AskExpert(expertID, message string) (answer, threadID stri
 	return "", "", fmt.Errorf("未识别的响应结构")
 }
 
+// ResumeExpert 续thread: 官方协议是 call_octop_expert带thread_id
+// (resume_octop_expert只管HITL挂起态, fileops是文本协议thread已完结, 不走它)
+func (c *OctopClient) ResumeExpert(expertID, threadID, message string) (string, error) {
+	out, err := c.mcpCall(3, "tools/call", map[string]any{
+		"name": "call_octop_expert",
+		"arguments": map[string]any{
+			"expert_id": expertID,
+			"thread_id": threadID,
+			"message":   message,
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	if res, ok := out["result"].(map[string]any); ok {
+		if sc, ok := res["structuredContent"].(map[string]any); ok {
+			if e, ok := sc["error"].(string); ok && e != "" {
+				return "", fmt.Errorf("续答失败: %s", e)
+			}
+			return str(sc["response"]), nil
+		}
+	}
+	return "", fmt.Errorf("未识别的响应结构")
+}
+
 func str(v any) string {
 	if s, ok := v.(string); ok {
 		return s
@@ -240,7 +265,9 @@ func main() {
 		msg := q
 		if wsEval != "" {
 			msg = q + "\n\n[本地工作区文件清单]\n" + manifest +
-				"\n如需操作文件, 请在回答末尾用 ```fileops 代码块输出JSON操作数组(op/path/body/to/reason), 只能用相对路径, 允许op: read/write/append/delete/move。不操作文件就不用输出该代码块。"
+				"\n如需操作文件, 请在回答末尾用 ```fileops 代码块输出JSON操作数组(op/path/body/to/reason), 只能用相对路径, 允许op: read/write/append/delete/move。不操作文件就不用输出该代码块。\n" +
+				"重要: 清单里的路径就是fileops的path, 以工作区根为基准, 不要在path前再加工作区目录名(例如清单里有 客户需求.txt, path就写 客户需求.txt, 不要写 演示项目A/客户需求.txt)。新建文件同理, path直接写文件名或子目录/文件名。绝对路径和..一律会被拒绝。\n" +
+				"注意: 你运行在云端, 没有用户电脑的磁盘访问。你记忆里或服务器上的任何目录状态(如 报表/sum.txt)都不是用户电脑的真实状态, 本次以这条消息里的清单为唯一事实。需要文件内容时, 输出read的fileops计划并停下等待, 客户端会把内容回传给你, 不要凭记忆猜文件内容。"
 		}
 		ans, thread, err := client.AskExpert(chosen.ExpertID, msg)
 		if err != nil {
@@ -250,7 +277,6 @@ func main() {
 		if thread != "" {
 			lastThread = thread
 		}
-		_ = lastThread
 		fmt.Printf("AI> %s\n\n", ans)
 
 		// 解析操作计划
@@ -273,6 +299,40 @@ func main() {
 			}
 		}
 		auditLog(wsEval, username, chosen.ExpertID, ops, results)
+
+		// read有内容→自动喂回专家续答(代理闭环)
+		var feedback strings.Builder
+		for _, r := range results {
+			if r.Op == "read" && r.Status == "done" && r.Content != "" {
+				feedback.WriteString("\n[文件 " + r.Path + " 内容]\n" + r.Content + "\n")
+			}
+		}
+		if feedback.Len() > 0 && lastThread != "" {
+			cont, err := client.ResumeExpert(chosen.ExpertID, lastThread,
+				"[客户端执行结果] 你请求的read已完成, 内容如下, 请继续你的任务(如需写文件继续用fileops):"+feedback.String())
+			if err != nil {
+				fmt.Println("❌ 续答失败:", err)
+			} else {
+				fmt.Printf("AI> %s\n\n", cont)
+				// 续答里可能又有新操作计划
+				if ops2 := ParseOps(cont); len(ops2) > 0 {
+					fmt.Println(FormatOpsPlan(ops2))
+					approved2 := readUserConfirm(reader)
+					results2 := ExecuteOps(wsEval, ops2, approved2)
+					for _, r := range results2 {
+						switch r.Status {
+						case "done":
+							fmt.Printf("  ✅ %-6s %-20s %s\n", r.Op, r.Path, r.Detail)
+						case "rejected":
+							fmt.Printf("  ⛔ %-6s %-20s %s\n", r.Op, r.Path, r.Detail)
+						default:
+							fmt.Printf("  ❌ %-6s %-20s %s\n", r.Op, r.Path, r.Detail)
+						}
+					}
+					auditLog(wsEval, username, chosen.ExpertID, ops2, results2)
+				}
+			}
+		}
 		fmt.Println()
 	}
 }

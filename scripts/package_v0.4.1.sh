@@ -2,7 +2,7 @@
 # octop-client v0.4.0 打包: macOS DMG + Windows exe
 set -eu
 cd /Users/liubang/dev/octop-stack/client
-VER=0.4.0
+VER=0.4.1
 DIST=~/dev/octop-stack/dist/v$VER
 DMGROOT=/tmp/oc_dmgroot
 rm -rf "$DIST" "$DMGROOT" && mkdir -p "$DIST" "$DMGROOT"

@@ -56,10 +56,11 @@ func ParseOps(answer string) []FileOp {
 
 // OpResult 单个操作的执行结果
 type OpResult struct {
-	Op     string
-	Path   string
-	Status string // done|rejected|error
-	Detail string
+	Op      string
+	Path    string
+	Status  string // done|rejected|error
+	Detail  string
+	Content string // read成功时的文件内容
 }
 
 // ExecuteOps 在沙箱内执行操作计划(每个操作独立校验)
@@ -87,6 +88,7 @@ func ExecuteOps(rootEval string, ops []FileOp, approved bool) []OpResult {
 			}
 			r.Status = "done"
 			r.Detail = fmt.Sprintf("已读%d字节", len(data))
+			r.Content = string(data)
 		case "write":
 			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
 				r.Status, r.Detail = "error", err.Error()
