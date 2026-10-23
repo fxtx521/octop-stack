@@ -13,6 +13,7 @@ import (
 type OctopClient struct {
 	BaseURL string
 	Token   string
+	Role    string // admin / staff
 	HTTP    *http.Client
 }
 
@@ -37,6 +38,9 @@ func (c *OctopClient) Login(username, password string) error {
 	}
 	var out struct {
 		AccessToken string `json:"access_token"`
+		User        struct {
+			Role string `json:"role"`
+		} `json:"user"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
 		return err
@@ -45,7 +49,57 @@ func (c *OctopClient) Login(username, password string) error {
 		return fmt.Errorf("登录返回无 token")
 	}
 	c.Token = out.AccessToken
+	c.Role = out.User.Role
 	return nil
+}
+
+// AdminGet 管理端GET(需admin token)
+func (c *OctopClient) AdminGet(path string) (map[string]any, error) {
+	req, err := http.NewRequest("GET", c.BaseURL+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(b))
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		// audit-log等返回数组
+		return map[string]any{"_list": json.RawMessage(b)}, nil
+	}
+	return out, nil
+}
+
+// AdminPost 管理端POST
+func (c *OctopClient) AdminPost(path string, body map[string]any) (map[string]any, error) {
+	j, _ := json.Marshal(body)
+	req, err := http.NewRequest("POST", c.BaseURL+path, bytes.NewReader(j))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	b, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, string(b))
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return map[string]any{"_raw": string(b)}, nil
+	}
+	return out, nil
 }
 
 // mcpCall 调 MCP 网关 (官方 POST /api/mcp/agents)

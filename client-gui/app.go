@@ -35,6 +35,7 @@ func (a *App) startup(ctx context.Context) {
 
 type LoginResult struct {
 	OK      bool          `json:"ok"`
+	Role    string        `json:"role"`
 	Msg     string        `json:"msg"`
 	Experts []core.Expert `json:"experts"`
 	Usage   string        `json:"usage"`
@@ -130,7 +131,7 @@ func (a *App) Login(server, username, password string) LoginResult {
 	if len(experts) > 0 {
 		a.Expert = experts[0].ExpertID
 	}
-	return LoginResult{OK: true, Experts: experts, Usage: usage}
+	return LoginResult{OK: true, Experts: experts, Usage: usage, Role: c.Role}
 }
 
 // Ask 向专家提问, 自动带工作区清单+fileops协议说明
@@ -164,6 +165,89 @@ func (a *App) Resume(message string) AskResult {
 	}
 	a.Thread = thread
 	return AskResult{OK: true, Answer: answer, Thread: thread, Ops: core.ParseOps(answer)}
+}
+
+// ReadFile 预览工作区内文件内容(前端点击文件用)
+func (a *App) ReadFile(rel string) map[string]any {
+	if a.WSRoot == "" {
+		return map[string]any{"ok": false, "msg": "未设置工作区"}
+	}
+	path, err := core.ResolveInWS(a.WSRoot, rel)
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	if len(data) > 200*1024 {
+		data = data[:200*1024]
+	}
+	return map[string]any{"ok": true, "content": string(data), "size": len(data)}
+}
+
+// ---------- 管理后台(admin角色) ----------
+
+// AdminOverview 管理后台总览
+func (a *App) AdminOverview() map[string]any {
+	if a.client == nil {
+		return map[string]any{"ok": false, "msg": "未登录"}
+	}
+	out, err := a.client.AdminGet("/api/admin/overview")
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	return map[string]any{"ok": true, "data": out}
+}
+
+// AdminMetrics 运行指标
+func (a *App) AdminMetrics() map[string]any {
+	if a.client == nil {
+		return map[string]any{"ok": false, "msg": "未登录"}
+	}
+	out, err := a.client.AdminGet("/api/admin/metrics")
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	return map[string]any{"ok": true, "data": out}
+}
+
+// AdminAudit 审计日志
+func (a *App) AdminAudit() map[string]any {
+	if a.client == nil {
+		return map[string]any{"ok": false, "msg": "未登录"}
+	}
+	out, err := a.client.AdminGet("/api/admin/audit-log")
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	return map[string]any{"ok": true, "data": out}
+}
+
+// AdminInvites 邀请码列表
+func (a *App) AdminInvites() map[string]any {
+	if a.client == nil {
+		return map[string]any{"ok": false, "msg": "未登录"}
+	}
+	out, err := a.client.AdminGet("/api/users/invites")
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	return map[string]any{"ok": true, "data": out}
+}
+
+// AdminCreateInvite 生成开号邀请码(role: staff/admin)
+func (a *App) AdminCreateInvite(role, note string) map[string]any {
+	if a.client == nil {
+		return map[string]any{"ok": false, "msg": "未登录"}
+	}
+	out, err := a.client.AdminPost("/api/users/invites", map[string]any{
+		"role": role, "note": note,
+	})
+	if err != nil {
+		return map[string]any{"ok": false, "msg": err.Error()}
+	}
+	return map[string]any{"ok": true, "data": out}
 }
 
 // Apply 用户批准后执行fileops计划(沙箱+审计都在core)

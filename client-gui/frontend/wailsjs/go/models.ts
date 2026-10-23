@@ -131,6 +131,7 @@ export namespace main {
 	}
 	export class LoginResult {
 	    ok: boolean;
+	    role: string;
 	    msg: string;
 	    experts: core.Expert[];
 	    usage: string;
@@ -142,6 +143,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
+	        this.role = source["role"];
 	        this.msg = source["msg"];
 	        this.experts = this.convertValues(source["experts"], core.Expert);
 	        this.usage = source["usage"];

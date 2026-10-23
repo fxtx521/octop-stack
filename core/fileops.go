@@ -68,7 +68,7 @@ func ExecuteOps(rootEval string, ops []FileOp, approved bool) []OpResult {
 	var results []OpResult
 	for _, op := range ops {
 		r := OpResult{Op: op.Op, Path: op.Path}
-		full, err := resolveInWS(rootEval, op.Path)
+		full, err := ResolveInWS(rootEval, op.Path)
 		if err != nil {
 			r.Status, r.Detail = "rejected", err.Error()
 			results = append(results, r)
@@ -121,7 +121,7 @@ func ExecuteOps(rootEval string, ops []FileOp, approved bool) []OpResult {
 			r.Status = "done"
 			r.Detail = "已删除"
 		case "move":
-			dst, err := resolveInWS(rootEval, op.To)
+			dst, err := ResolveInWS(rootEval, op.To)
 			if err != nil {
 				r.Status, r.Detail = "rejected", "目标路径: " + err.Error()
 				break

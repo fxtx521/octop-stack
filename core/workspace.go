@@ -31,7 +31,7 @@ func WorkspaceRoot(root string) (string, error) {
 
 // resolveInWS 把相对路径安全解析到工作区内
 // 检查: 非绝对 / 无.. / 已存在部分的symlink展开后仍在工作区内
-func resolveInWS(rootEval, rel string) (string, error) {
+func ResolveInWS(rootEval, rel string) (string, error) {
 	rel = strings.TrimSpace(rel)
 	if rel == "" || rel == "." {
 		return "", errors.New("空路径")
