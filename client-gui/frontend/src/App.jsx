@@ -140,6 +140,17 @@ export default function App() {
         </div>
       )}
       <div className="ws-row">
+      <Sidebar
+        user={user}
+        tasks={tasks}
+        curId={curId}
+        onNew={newTask}
+        onOpen={openTask}
+        onDelete={delTask}
+        onNav={setView}
+        onLogout={logout}
+        view={view === 'files' ? 'chat' : view}
+      />
       {view === 'admin' ? (
         <AdminPane user={user} onBack={() => setView('chat')} />
       ) : view === 'experts' ? (
@@ -148,17 +159,6 @@ export default function App() {
         <StubPage id={view} />
       ) : (
         <>
-          <Sidebar
-            user={user}
-            tasks={tasks}
-            curId={curId}
-            onNew={newTask}
-            onOpen={openTask}
-            onDelete={delTask}
-            onNav={setView}
-            onLogout={logout}
-            view={view}
-          />
           <ChatPane
             key={curId}
             user={user}
