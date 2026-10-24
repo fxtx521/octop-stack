@@ -42,10 +42,17 @@ jobs:
           cd build/bin
           ditto -c -k --sequesterRsrc --keepParent octop-workbench.app octop-workbench-mac.zip
 
+      - name: Install NSIS (Windows)
+        if: matrix.os == 'windows-latest'
+        run: choco install nsis -y --no-progress
+
       - name: Build (Windows, 含NSIS安装包)
         if: matrix.os == 'windows-latest'
         working-directory: client-gui
-        run: wails build -platform windows/amd64 -nsis
+        shell: pwsh
+        run: |
+          $env:PATH += ';C:\Program Files (x86)\NSIS'
+          wails build -platform windows/amd64 -nsis
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -63,3 +70,4 @@ jobs:
           files: |
             client-gui/build/bin/*.zip
             client-gui/build/bin/*installer*.exe
+            client-gui/build/bin/octop-workbench.exe
