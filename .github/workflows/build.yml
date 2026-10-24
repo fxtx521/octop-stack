@@ -33,14 +33,15 @@ jobs:
 
       - name: Build (macOS) + zip
         if: matrix.os == 'macos-latest'
+        working-directory: client-gui
         run: |
           wails build -platform darwin/universal
-          cd client-gui/build/bin
+          cd build/bin
           ditto -c -k --sequesterRsrc --keepParent octop-workbench.app octop-workbench-mac.zip
-          cd -
 
       - name: Build (Windows, 含NSIS安装包)
         if: matrix.os == 'windows-latest'
+        working-directory: client-gui
         run: wails build -platform windows/amd64 -nsis
 
       - name: Upload artifacts
