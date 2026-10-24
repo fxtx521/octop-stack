@@ -64,10 +64,19 @@ jobs:
             client-gui/build/bin/*.exe
             client-gui/build/bin/*.app
 
+      - name: Extract bilingual release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}  # tag名经env传入,不走shell插值,防注入
+        run: |
+          awk -v t="## [$TAG]" 'index($0,t)==1{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md > release_notes.md
+          head -3 release_notes.md
+
       - name: Attach to Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
+          body_path: release_notes.md
           files: |
             client-gui/build/bin/*.zip
             client-gui/build/bin/*.dmg
