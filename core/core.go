@@ -283,3 +283,100 @@ func humanNum(n int64) string {
 	}
 	return string(out)
 }
+
+// ---- 专家实例管理 (官方 /api/agents CRUD, Octop 1.0.2 自带) ----
+
+// AgentsRaw 返回 /api/agents 原始列表(含 state/config, 供管理页渲染)
+func (c *OctopClient) AgentsRaw() ([]map[string]any, error) {
+	req, _ := http.NewRequest("GET", c.BaseURL+"/api/agents", nil)
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GET /api/agents -> %d: %s", resp.StatusCode, truncate(data))
+	}
+	var out []map[string]any
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// doAgentAction 调 agents 的无返回体动作端点(start/stop/reload/delete)
+func (c *OctopClient) doAgentAction(method, path string) error {
+	req, err := http.NewRequest(method, c.BaseURL+path, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		data, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("%s %s -> %d: %s", method, path, resp.StatusCode, truncate(data))
+	}
+	return nil
+}
+
+func (c *OctopClient) StartAgent(id string) error  { return c.doAgentAction("POST", "/api/agents/"+id+"/start") }
+func (c *OctopClient) StopAgent(id string) error   { return c.doAgentAction("POST", "/api/agents/"+id+"/stop") }
+func (c *OctopClient) DeleteAgent(id string) error { return c.doAgentAction("DELETE", "/api/agents/"+id) }
+
+// CreateAgent 新建专家(name/描述/人设提示词/欢迎语/是否共享)
+func (c *OctopClient) CreateAgent(name, description, systemPrompt, welcome string, shared bool) (map[string]any, error) {
+	body := map[string]any{
+		"name": name, "description": description,
+		"system_prompt": systemPrompt, "welcome_message": welcome,
+		"is_shared": shared,
+	}
+	j, _ := json.Marshal(body)
+	req, _ := http.NewRequest("POST", c.BaseURL+"/api/agents", bytes.NewReader(j))
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("POST /api/agents -> %d: %s", resp.StatusCode, truncate(data))
+	}
+	var out map[string]any
+	json.Unmarshal(data, &out)
+	return out, nil
+}
+
+// UpdateAgent 改专家(人设提示词/简介/欢迎语)
+func (c *OctopClient) UpdateAgent(id string, fields map[string]any) error {
+	j, _ := json.Marshal(fields)
+	req, _ := http.NewRequest("PATCH", c.BaseURL+"/api/agents/"+id, bytes.NewReader(j))
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		data, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("PATCH /api/agents/%s -> %d: %s", id, resp.StatusCode, truncate(data))
+	}
+	return nil
+}
+
+// truncate 截断错误响应体, 防错误日志过长
+func truncate(b []byte) string {
+	s := string(b)
+	if len(s) > 300 {
+		return s[:300]
+	}
+	return s
+}

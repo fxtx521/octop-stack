@@ -20,4 +20,10 @@ export const api = {
   adminInvites: () => A().AdminInvites(),
   adminAudit: () => A().AdminAudit(),
   adminCreateInvite: (role, note) => A().AdminCreateInvite(role, note),
+  // 专家实例管理(官方 /api/agents)
+  agentsManage: () => A().AgentsManage(),
+  agentCreate: (name, desc, prompt, welcome, shared) => A().AgentCreate(name, desc, prompt, welcome, !!shared),
+  agentUpdate: (id, fields) => A().AgentUpdate(id, JSON.stringify(fields)),
+  agentToggle: (id, action) => A().AgentToggle(id, action),
+  agentDelete: (id) => A().AgentDelete(id),
 }

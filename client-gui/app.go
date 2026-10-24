@@ -414,3 +414,74 @@ func (a *App) Apply(opsJSON string, approved bool) ApplyResult {
 	}
 	return ApplyResult{OK: true, Results: out, Feedback: feedback.String()}
 }
+
+// ---- 专家实例管理: 直接透传官方 /api/agents CRUD ----
+
+func (a *App) AgentEnsure() string {
+	if a.client == nil {
+		return "未登录"
+	}
+	return ""
+}
+
+func (a *App) AgentsManage() []map[string]any {
+	if a.client == nil {
+		return nil
+	}
+	rows, err := a.client.AgentsRaw()
+	if err != nil {
+		return nil
+	}
+	return rows
+}
+
+func (a *App) AgentCreate(name, description, systemPrompt, welcome string, shared bool) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	row, err := a.client.CreateAgent(name, description, systemPrompt, welcome, shared)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true, "agent": row}
+}
+
+func (a *App) AgentUpdate(id string, fieldsJSON string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	fields := map[string]any{}
+	if err := json.Unmarshal([]byte(fieldsJSON), &fields); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	if err := a.client.UpdateAgent(id, fields); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
+
+func (a *App) AgentToggle(id, action string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	var err error
+	if action == "stop" {
+		err = a.client.StopAgent(id)
+	} else {
+		err = a.client.StartAgent(id)
+	}
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
+
+func (a *App) AgentDelete(id string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	if err := a.client.DeleteAgent(id); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}

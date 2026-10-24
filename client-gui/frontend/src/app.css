@@ -414,3 +414,35 @@
 }
 .log-user { border-left-color: var(--brand); color: var(--ink); }
 .log-ai { border-left-color: var(--accent); }
+
+/* ---- 专家实例管理 ---- */
+.exp-mgmt { border:1px solid var(--line,#e3e6ea); background:#fff; border-radius:8px;
+  padding:5px 12px; font-size:12px; color:#57606a; cursor:pointer; }
+.exp-mgmt.on { border-color:var(--brand,#10a37f); color:var(--brand,#10a37f); }
+.exp-mgmt-bar { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.exp-new { background:var(--brand,#10a37f); color:#fff; border:0; border-radius:8px;
+  padding:6px 14px; font-size:12px; cursor:pointer; }
+.exp-mgmt-tip { font-size:11px; color:#8b949e; }
+.exp-state { font-size:10px; padding:2px 8px; border-radius:10px; margin-left:auto; }
+.exp-state.run { background:#e6f6f0; color:#0e8a68; }
+.exp-state.stop { background:#f1f3f5; color:#8b949e; }
+.exp-ops { display:flex; gap:6px; }
+.exp-mini { border:1px solid var(--line,#e3e6ea); background:#fff; border-radius:6px;
+  padding:3px 10px; font-size:11px; cursor:pointer; color:#57606a; }
+.exp-mini:hover { border-color:var(--brand,#10a37f); color:var(--brand,#10a37f); }
+.exp-danger:hover { border-color:#d1242f; color:#d1242f; }
+.exf-mask { position:fixed; inset:0; background:rgba(0,0,0,.35);
+  display:flex; align-items:center; justify-content:center; z-index:60; }
+.exf-card { background:#fff; border-radius:12px; padding:20px; width:420px;
+  box-shadow:0 12px 40px rgba(0,0,0,.18); }
+.exf-title { font-size:15px; font-weight:600; margin-bottom:12px; color:#1f2328; }
+.exf-in { width:100%; box-sizing:border-box; border:1px solid var(--line,#e3e6ea);
+  border-radius:8px; padding:8px 10px; font-size:13px; margin-bottom:10px; }
+.exf-in:focus { outline:none; border-color:var(--brand,#10a37f); }
+.exf-ta { height:96px; resize:vertical; font-family:inherit; }
+.exf-share { font-size:12px; color:#57606a; display:flex; gap:6px; align-items:center; }
+.exf-err { color:#d1242f; font-size:12px; margin:6px 0; }
+.exf-btns { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+.exf-btn { border:1px solid var(--line,#e3e6ea); background:#fff; border-radius:8px;
+  padding:6px 16px; font-size:13px; cursor:pointer; }
+.exf-ok { background:var(--brand,#10a37f); color:#fff; border:0; }

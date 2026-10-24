@@ -13,6 +13,18 @@ export function AdminMetrics():Promise<Record<string, any>>;
 
 export function AdminOverview():Promise<Record<string, any>>;
 
+export function AgentCreate(arg1:string,arg2:string,arg3:string,arg4:string,arg5:boolean):Promise<Record<string, any>>;
+
+export function AgentDelete(arg1:string):Promise<Record<string, any>>;
+
+export function AgentEnsure():Promise<string>;
+
+export function AgentToggle(arg1:string,arg2:string):Promise<Record<string, any>>;
+
+export function AgentUpdate(arg1:string,arg2:string):Promise<Record<string, any>>;
+
+export function AgentsManage():Promise<Array<Record<string, any>>>;
+
 export function Apply(arg1:string,arg2:boolean):Promise<main.ApplyResult>;
 
 export function Ask(arg1:string,arg2:string,arg3:string):Promise<main.AskResult>;

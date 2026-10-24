@@ -22,6 +22,30 @@ export function AdminOverview() {
   return window['go']['main']['App']['AdminOverview']();
 }
 
+export function AgentCreate(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['AgentCreate'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function AgentDelete(arg1) {
+  return window['go']['main']['App']['AgentDelete'](arg1);
+}
+
+export function AgentEnsure() {
+  return window['go']['main']['App']['AgentEnsure']();
+}
+
+export function AgentToggle(arg1, arg2) {
+  return window['go']['main']['App']['AgentToggle'](arg1, arg2);
+}
+
+export function AgentUpdate(arg1, arg2) {
+  return window['go']['main']['App']['AgentUpdate'](arg1, arg2);
+}
+
+export function AgentsManage() {
+  return window['go']['main']['App']['AgentsManage']();
+}
+
 export function Apply(arg1, arg2) {
   return window['go']['main']['App']['Apply'](arg1, arg2);
 }
