@@ -1,53 +1,71 @@
 /* ============================================================
-   Octop 工作台 · React 版设计系统
-   Token 源: WorkBuddy 5.8.3 界面实测 (自研实现)
+   Octop 工作台 · 设计系统 v3
+   Token 源: WorkBuddy 5.8.3 真机实测 (浅色/绿品牌/细描边)
    ============================================================ */
 :root {
-  --surface: #181b20;
-  --side: #202226;
-  --side-deep: #1b1d21;
-  --panel: #23252b;
-  --panel-2: #2a2d34;
-  --raise: #2e3139;
-  --border: #2e3138;
-  --border-soft: #272a30;
-  --text: #d6d9df;
-  --text-strong: #f2f4f7;
-  --muted: #9298a2;
-  --faint: #62676f;
-  --primary: #6c4dff;
-  --primary-hover: #7e63ff;
-  --primary-soft: rgba(108, 77, 255, 0.13);
-  --accent: #00c29a;
-  --accent-soft: rgba(0, 194, 154, 0.12);
-  --danger: #ff5c5c;
-  --danger-soft: rgba(255, 92, 92, 0.1);
-  --warn: #f5a623;
-  --warn-soft: rgba(245, 166, 35, 0.09);
+  /* 底色层 */
+  --bg: #f7f7f8;
+  --side: #f4f5f6;
+  --card: #ffffff;
+  --raise: #f6f6f7;
+  --hover: #f0f1f2;
+  --sel: #e9e9ea;
+
+  /* 描边 */
+  --line: #e8e8ea;
+  --line-2: #ececee;
+
+  /* 文字 */
+  --ink: #1f2328;
+  --ink-2: #57606a;
+  --ink-3: #8a919f;
+  --ink-4: #b3b8c0;
+
+  /* 品牌 */
+  --brand: #10a37f;
+  --brand-weak: #e7f5f0;
+  --accent: #3b82f6;
+  --warn: #d97706;
+  --warn-soft: #fdf3e3;
+  --danger: #dc2626;
+  --danger-soft: #fdecec;
+
+  /* 黑色强调 CTA */
+  --cta: #17181a;
+
+  /* 圆角 */
   --r-sm: 6px;
   --r: 8px;
   --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* 字号 */
+  --f-brand: 16px;
+  --f-body: 14px;
+  --f-sm: 12px;
+  --f-xs: 11px;
+
   --font: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
   --mono: "SF Mono", Menlo, monospace;
-  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.4);
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-pop: 0 8px 24px rgba(17, 20, 26, 0.1);
+  --shadow-card: 0 1px 2px rgba(17, 20, 26, 0.04);
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body, #app { height: 100%; }
 body {
   font-family: var(--font);
-  font-size: 13px;
-  color: var(--text);
-  background: var(--surface);
+  font-size: var(--f-body);
+  color: var(--ink);
+  background: var(--bg);
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
 input, textarea { user-select: text; font-family: var(--font); }
-button { font-family: var(--font); cursor: pointer; }
-::-webkit-scrollbar { width: 9px; height: 9px; }
-::-webkit-scrollbar-thumb { background: #363a42; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
-::-webkit-scrollbar-thumb:hover { background: #454a53; background-clip: content-box; }
+button { font-family: var(--font); cursor: pointer; border: none; background: none; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d4d6da; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #bfc2c7; }
 ::-webkit-scrollbar-track { background: transparent; }
 .hidden { display: none !important; }
 .spacer { flex: 1; }

@@ -24,14 +24,14 @@ function Node({ node, depth, expanded, setExpanded, onOpen }) {
     <>
       <div
         className={'tree-row' + (isDir ? ' dir' : '')}
-        style={{ paddingLeft: 8 + depth * 14 }}
         onClick={() => isDir
           ? setExpanded(e => ({ ...e, [node.path]: !isOpen }))
           : onOpen(node.path)}
       >
         <span className="tree-caret">{isDir ? (isOpen ? '▾' : '▸') : ''}</span>
-        <span className="tree-icon">{isDir ? (isOpen ? '📂' : '📁') : iconByExt(node.name)}</span>
+        <span className="tree-ic">{isDir ? (isOpen ? '📂' : '📁') : iconByExt(node.name)}</span>
         <span className="tree-name">{node.name}</span>
+        {!isDir && node.size != null && <span className="tree-size">{fmtSize(node.size)}</span>}
       </div>
       {isDir && isOpen && (node.children || []).map(c => (
         <Node key={c.path} node={c} depth={depth + 1}
@@ -49,6 +49,12 @@ function iconByExt(name) {
   if (['pdf'].includes(ext)) return '📕'
   if (['js', 'ts', 'py', 'go', 'json', 'sh'].includes(ext)) return '⚙️'
   return '📄'
+}
+
+function fmtSize(n) {
+  if (n < 1024) return n + 'B'
+  if (n < 1048576) return (n / 1024).toFixed(1) + 'KB'
+  return (n / 1048576).toFixed(1) + 'MB'
 }
 
 // 兼容: 后端可能返回 {tree:[...]} 或扁平路径数组
@@ -78,6 +84,7 @@ function normalize(files) {
     name: f.name,
     path: f.path || f.name,
     type: f.type || (f.isDir ? 'dir' : 'file'),
+    size: f.size,
     children: f.children ? normalize(f.children) : [],
   }))
 }

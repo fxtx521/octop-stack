@@ -16,6 +16,8 @@ export function Apply(arg1:string,arg2:boolean):Promise<main.ApplyResult>;
 
 export function Ask(arg1:string):Promise<main.AskResult>;
 
+export function ClearSession():Promise<void>;
+
 export function CurrentWorkspace():Promise<Record<string, any>>;
 
 export function ListFiles():Promise<Array<string>>;

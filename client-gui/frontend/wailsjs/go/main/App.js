@@ -30,6 +30,10 @@ export function Ask(arg1) {
   return window['go']['main']['App']['Ask'](arg1);
 }
 
+export function ClearSession() {
+  return window['go']['main']['App']['ClearSession']();
+}
+
 export function CurrentWorkspace() {
   return window['go']['main']['App']['CurrentWorkspace']();
 }

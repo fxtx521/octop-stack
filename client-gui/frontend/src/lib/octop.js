@@ -6,6 +6,7 @@ export const api = {
   ask: (text) => A().Ask(text),
   resume: (msg) => A().Resume(msg),
   tryResume: () => A().TryResume(),
+  clearSession: () => A().ClearSession(),
   apply: (ops, approved) => A().Apply(JSON.stringify(ops), approved),
   listFiles: () => A().ListFiles(),
   readFile: (rel) => A().ReadFile(rel),

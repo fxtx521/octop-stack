@@ -221,6 +221,16 @@ func (a *App) loadSession() session {
 	return session{}
 }
 
+// ClearSession 退出登录: 只清会话, 保留工作区记忆
+func (a *App) ClearSession() {
+	pref := a.readPref()
+	pref.Session = nil
+	a.writePref(pref)
+	a.client = nil
+	a.Expert = ""
+	a.Thread = ""
+}
+
 type prefFile struct {
 	LastWorkspace string   `json:"last_workspace"`
 	Session       *session `json:"session,omitempty"`

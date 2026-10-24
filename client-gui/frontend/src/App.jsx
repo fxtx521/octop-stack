@@ -3,6 +3,7 @@ import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ChatPane from './components/ChatPane.jsx'
 import RightPane from './components/RightPane.jsx'
+import Experts from './components/Experts.jsx'
 import { api } from './lib/octop.js'
 import './app.css'
 
@@ -19,7 +20,7 @@ export default function App() {
   useEffect(() => { showFatal = setFatal }, [])
   const [tasks, setTasks] = useState([])
   const [curId, setCurId] = useState(null)
-  const [view, setView] = useState('chat')        // chat | files | admin
+  const [view, setView] = useState('chat')        // chat | files | experts | scheduled | library | admin
   const cur = useMemo(() => tasks.find(t => t.id === curId), [tasks, curId])
 
   function patchTask(id, patch) {
@@ -31,8 +32,8 @@ export default function App() {
       id: 't' + Date.now(),
       seq: taskSeq++,
       title: '新任务',
-      expert: user?.experts?.[0]?.id || '',
-      workspace: '',
+      expert: user?.experts?.[0]?.expert_id || user?.experts?.[0]?.id || '',
+      workspace: tasks[0]?.workspace || '',
       msgs: [],      // {role:'user|ai|sys', text, ops?, ts}
       pending: [],   // 审批队列
       files: null,   // 文件树缓存
@@ -104,6 +105,33 @@ export default function App() {
 
   if (!user) return <Login onLogin={doLogin} />
 
+  function logout() {
+    // 只清会话, 保留工作区记忆
+    setUser(null)
+    setTasks([])
+    setCurId(null)
+    setView('chat')
+    api.clearSession?.()
+  }
+
+  function summon(e) {
+    // 从专家广场召唤专家 → 新任务并预选该专家
+    const t = {
+      id: 't' + Date.now(),
+      seq: taskSeq++,
+      title: '新任务 · ' + (e.name || '专家'),
+      expert: e.expert_id || e.id || '',
+      workspace: cur?.workspace || '',
+      msgs: [],
+      pending: [],
+      files: cur?.files || [],
+      busy: false,
+    }
+    setTasks(ts => [t, ...ts])
+    setCurId(t.id)
+    setView('chat')
+  }
+
   return (
     <div className="ws">
       {fatal && (
@@ -113,7 +141,11 @@ export default function App() {
       )}
       <div className="ws-row">
       {view === 'admin' ? (
-        <AdminPane user={user} />
+        <AdminPane user={user} onBack={() => setView('chat')} />
+      ) : view === 'experts' ? (
+        <Experts user={user} onSummon={summon} />
+      ) : view === 'scheduled' || view === 'library' ? (
+        <StubPage id={view} />
       ) : (
         <>
           <Sidebar
@@ -123,7 +155,8 @@ export default function App() {
             onNew={newTask}
             onOpen={openTask}
             onDelete={delTask}
-            onAdmin={() => setView('admin')}
+            onNav={setView}
+            onLogout={logout}
             view={view}
           />
           <ChatPane
@@ -146,7 +179,23 @@ export default function App() {
   )
 }
 
-function AdminPane({ user }) {
+function StubPage({ id }) {
+  const meta = {
+    scheduled: { ic: '◷', label: '定时任务', hint: '让专家按计划自动干活, 敬请期待' },
+    library: { ic: '▤', label: '资料库', hint: '团队共享知识库, 敬请期待' },
+  }[id] || { ic: '◇', label: '', hint: '' }
+  return (
+    <div className="stub">
+      <div className="stub-head">{meta.label}</div>
+      <div className="stub-body">
+        <span className="big">{meta.ic}</span>
+        <p>{meta.hint}</p>
+      </div>
+    </div>
+  )
+}
+
+function AdminPane({ user, onBack }) {
   const [tab, setTab] = useState('overview')
   const [data, setData] = useState(null)
   useEffect(() => {
@@ -162,6 +211,7 @@ function AdminPane({ user }) {
   return (
     <div className="adminpage">
       <div className="admin-head">
+        <button className="chat-head-btn" onClick={onBack} title="返回">‹</button>
         <span className="admin-title">管理后台</span>
         <div className="seg">
           {['overview', 'metrics', 'invites', 'audit'].map(t => (

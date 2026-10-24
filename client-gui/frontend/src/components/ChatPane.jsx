@@ -10,13 +10,20 @@ const SUGGESTIONS = [
 
 export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
   const [input, setInput] = useState('')
+  const taRef = useRef(null)
   const scrollRef = useRef(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: 999999, behavior: 'smooth' })
-  }, [task?.msgs?.length, task?.pending?.length])
+  }, [task?.msgs?.length, task?.pending?.length, task?.busy])
 
-  if (!task) return <div className="chat-empty-state"><div className="chat-empty-hint">选择或新建一个任务</div></div>
+  // textarea 自适应高度
+  useEffect(() => {
+    const ta = taRef.current
+    if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 160) + 'px' }
+  }, [input])
+
+  if (!task) return <div className="chat"><div className="stub-body"><span className="big">◇</span><p>选择或新建一个任务</p></div></div>
 
   async function send(text) {
     const content = (text ?? input).trim()
@@ -78,79 +85,94 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
     }
   }
 
+  const curExpert = user?.experts?.find(x => x.expert_id === task.expert)
   const empty = task.msgs.length === 0
 
   return (
-    <main className="chatpane">
-      <header className="chat-top">
+    <main className="chat">
+      <header className="chat-head">
         <span className="chat-title">{task.title}</span>
-        <select className="expert-select" value={task.expert}
-          onChange={e => patchTask(task.id, { expert: e.target.value })}>
-          {user.experts?.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}
-        </select>
-        <div className="spacer" />
-        <button className="ghost-btn" onClick={pickWorkspace}>
-          {task.workspace ? '📁 ' + shortPath(task.workspace) : '📁 选择工作文件夹'}
-        </button>
+        <button className="chat-head-btn" onClick={pickWorkspace} title="选择工作文件夹">📁</button>
+        <button className="chat-head-btn" onClick={onOpenFiles} title="工作区文件">▤</button>
       </header>
 
-      {empty ? (
-        <div className="hero">
-          <div className="hero-title">Octop<span className="dot">.</span> 我帮你</div>
-          <div className="hero-sub">把活交给我，你只管确认结果</div>
-          <div className="hero-input">
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && send()}
-              placeholder="描述你要做的事，回车发送…"
-              autoFocus
-            />
-            <button onClick={() => send()} disabled={task.busy || !input.trim()}>发送</button>
-          </div>
-          <div className="hero-tip">💡 建议先点右上角「选择工作文件夹」，告诉我能碰哪个目录</div>
-          <div className="hero-sugs">
-            {SUGGESTIONS.map(s => (
-              <button key={s.label} className="sug" onClick={() => send(s.label)}>
-                <span className="sug-icon">{s.icon}</span>
-                <span className="sug-label">{s.label}</span>
-                <span className="sug-hint">{s.hint}</span>
-              </button>
-            ))}
+      <div className="chat-scroll" ref={scrollRef}>
+        <div className="chat-inner">
+          {empty && (
+            <div className="hero">
+              <h1>你好, 我来帮你<em>。</em></h1>
+              <p>把活交给我，你只管确认结果。先选好工作文件夹，我就能动手。</p>
+              <div className="hero-sugs">
+                {SUGGESTIONS.map(s => (
+                  <button key={s.label} className="sug-card" onClick={() => send(s.label)}>
+                    <b>{s.icon} {s.label}</b>
+                    <span>{s.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {task.msgs.map((m, i) => <Msg key={i} m={m} />)}
+          {task.pending.map((op, idx) => (
+            <ApprovalCard key={'ap' + idx} op={op} idx={idx} ops={task.pending} onDecide={approve} />
+          ))}
+          {task.busy && <div className="msg-busy"><i /><i /><i /> 它正在干活…</div>}
+        </div>
+      </div>
+
+      <div className="composer-wrap">
+        <div className="composer">
+          <textarea
+            ref={taRef}
+            className="composer-input"
+            rows={1}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+            placeholder="描述你要做的事, 回车发送…"
+            autoFocus
+          />
+          <div className="composer-bar">
+            <span className="cp-model" title="当前专家">◇ {curExpert?.name || user?.experts?.[0]?.name || '默认专家'}</span>
+            <button className="cp-btn" onClick={pickWorkspace}>
+              {task.workspace ? '📁 ' + shortPath(task.workspace) : '📁 选择工作文件夹'}
+            </button>
+            <button
+              className="cp-send"
+              onClick={() => send()}
+              disabled={task.busy || !input.trim()}
+              title="发送"
+            >↑</button>
           </div>
         </div>
-      ) : (
-        <>
-          <div className="stream" ref={scrollRef}>
-            {task.msgs.map((m, i) => <Msg key={i} m={m} />)}
-            {task.pending.map((op, idx) => (
-              <ApprovalCard key={'ap' + idx} op={op} idx={idx} ops={task.pending} onDecide={approve} />
-            ))}
-            {task.busy && <div className="typing"><span /><span /><span /></div>}
-          </div>
-          <div className="inputbar">
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && send()}
-              placeholder={task.busy ? '它正在干活…' : '继续对话…'}
-              disabled={task.busy}
-            />
-            <button onClick={() => send()} disabled={task.busy || !input.trim()}>发送</button>
-          </div>
-        </>
-      )}
+        <div className="composer-note">内容由 AI 生成, 文件操作需你批准后才会执行</div>
+      </div>
     </main>
   )
 }
 
 function Msg({ m }) {
   if (m.role === 'sys') return <div className="msg-sys">{m.text}</div>
+  if (m.role === 'user') {
+    return (
+      <div className="msg msg-user">
+        <div className="bubble">{m.text}</div>
+      </div>
+    )
+  }
   return (
-    <div className={'msg ' + m.role}>
-      <div className="msg-bubble">{m.text}</div>
+    <div className="msg msg-ai">
+      <div className="ava">O</div>
+      <div className="body"><div className="text">{stripFileops(m.text)}</div></div>
     </div>
   )
+}
+
+// fileops 提案已由审批卡呈现, 正文里剥离原始代码块
+function stripFileops(t) {
+  if (!t) return t
+  const out = t.replace(/```fileops[\s\S]*?```/g, '').replace(/```\s*[\s\S]*?"op"[\s\S]*?```/g, '')
+  return out.replace(/\n{3,}/g, '\n\n').trim()
 }
 
 const OP_META = {
@@ -165,17 +187,21 @@ function ApprovalCard({ op, idx, ops, onDecide }) {
   const meta = OP_META[op.op] || { icon: '🔧', label: op.op }
   const isLast = idx === ops.length - 1
   return (
-    <div className="approve-card">
-      <div className="approve-head">
-        <span className="approve-icon">{meta.icon}</span>
-        <span className="approve-title">{meta.label}{ops.length > 1 ? ` (${idx + 1}/${ops.length})` : ''} — 需要你批准</span>
+    <div className="approval">
+      <div className="ap-head">
+        <b>{meta.label}{ops.length > 1 ? ` (${idx + 1}/${ops.length})` : ''}</b>
+        <span>需要你批准</span>
       </div>
-      <div className="approve-path">{op.path}{op.to ? ' → ' + op.to : ''}</div>
-      {op.reason && <div className="approve-reason">{op.reason}</div>}
+      <div className="ap-op">
+        <span className="ap-icon">{meta.icon}</span>
+        <span className="ap-path">{op.path}{op.to ? ' → ' + op.to : ''}</span>
+        <span className="ap-idx">{op.path?.split('/').pop()?.split('.').pop()?.toUpperCase()}</span>
+      </div>
+      {op.reason && <div className="ap-reason">{op.reason}</div>}
       {isLast && (
-        <div className="approve-actions">
-          <button className="btn-ok" onClick={() => onDecide(ops, true)}>全部批准</button>
-          <button className="btn-no" onClick={() => onDecide(ops, false)}>拒绝</button>
+        <div className="ap-actions">
+          <button className="ap-btn ap-yes" onClick={() => onDecide(ops, true)}>全部批准</button>
+          <button className="ap-btn ap-no" onClick={() => onDecide(ops, false)}>拒绝</button>
         </div>
       )}
     </div>
@@ -184,6 +210,6 @@ function ApprovalCard({ op, idx, ops, onDecide }) {
 
 function shortPath(p) {
   if (!p) return ''
-  const parts = p.split('/')
+  const parts = p.replace(/\/+$/, '').split('/')
   return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : p
 }

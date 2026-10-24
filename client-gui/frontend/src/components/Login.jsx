@@ -22,16 +22,16 @@ export default function Login({ onLogin }) {
   }
 
   return (
-    <div className="login-bg">
+    <div className="login">
       <form className="login-card" onSubmit={submit}>
-        <div className="login-brand">Octop<span className="dot">.</span></div>
-        <div className="login-sub">企业 AI 工作台 · 员工端</div>
-        <label className="field-label">服务器</label>
-        <input className="field" value={srv} onChange={e => setSrv(e.target.value)} placeholder="http://公司服务器:端口" />
-        <label className="field-label">账号</label>
-        <input className="field" value={u} onChange={e => setU(e.target.value)} autoComplete="off" placeholder="工号或用户名" autoFocus />
-        <label className="field-label">密码</label>
-        <input className="field" type="password" value={p} onChange={e => setP(e.target.value)} placeholder="密码" />
+        <div className="login-logo"><b>Octop<i /></b><span>企业 AI 工作台 · 员工端</span></div>
+        <div className="login-sub">把活交给我, 你只管确认结果</div>
+        <label className="login-label">服务器</label>
+        <input className="login-input" value={srv} onChange={e => setSrv(e.target.value)} placeholder="http://公司服务器:端口" />
+        <label className="login-label">账号</label>
+        <input className="login-input" value={u} onChange={e => setU(e.target.value)} autoComplete="off" placeholder="工号或用户名" autoFocus />
+        <label className="login-label">密码</label>
+        <input className="login-input" type="password" value={p} onChange={e => setP(e.target.value)} placeholder="密码" />
         <button className="login-btn" disabled={busy}>{busy ? '登录中…' : '进入工作台'}</button>
         <div className="login-err">{err}</div>
       </form>
