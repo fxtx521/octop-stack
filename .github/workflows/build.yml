@@ -41,6 +41,7 @@ jobs:
           wails build -platform darwin/universal
           cd build/bin
           ditto -c -k --sequesterRsrc --keepParent octop-workbench.app octop-workbench-mac.zip
+          hdiutil create -volname "Octop Workbench" -srcfolder octop-workbench.app -ov -format UDZO octop-workbench-mac.dmg
 
       - name: Install NSIS (Windows)
         if: matrix.os == 'windows-latest'
@@ -69,5 +70,6 @@ jobs:
         with:
           files: |
             client-gui/build/bin/*.zip
+            client-gui/build/bin/*.dmg
             client-gui/build/bin/*installer*.exe
             client-gui/build/bin/octop-workbench.exe
