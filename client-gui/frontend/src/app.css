@@ -470,3 +470,9 @@
 .ald-tip { font-size:11px; color:#8b949e; margin-bottom:10px; line-height:1.5; }
 .ald-add { display:flex; gap:8px; margin-bottom:8px; }
 .ald-add .exf-in { flex:1; }
+
+/* ---- 管理后台: 用户/供应商 ---- */
+.adm-wrap { padding: 16px 20px; overflow-y: auto; height: 100%; }
+.adm-row { display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--line,#eceef1); }
+.adm-main { flex: 1; min-width: 0; }

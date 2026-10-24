@@ -445,3 +445,127 @@ func (c *OctopClient) DeleteSkill(agentID, slug string) error {
 	}
 	return nil
 }
+
+// ---- 用户管理 + 模型供应商(官方 /api/users, /api/admin/providers) ----
+
+// UsersRaw 用户全量列表(角色/锁定/配额)
+func (c *OctopClient) UsersRaw() ([]map[string]any, error) {
+	req, _ := http.NewRequest("GET", c.BaseURL+"/api/users", nil)
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GET /api/users -> %d: %s", resp.StatusCode, truncate(data))
+	}
+	var out []map[string]any
+	json.Unmarshal(data, &out)
+	return out, nil
+}
+
+// doJSON 通用JSON请求(带body或nil)
+func (c *OctopClient) doJSON(method, path string, body any) (int, []byte, error) {
+	var rd io.Reader
+	if body != nil {
+		j, _ := json.Marshal(body)
+		rd = bytes.NewReader(j)
+	}
+	req, err := http.NewRequest(method, c.BaseURL+path, rd)
+	if err != nil {
+		return 0, nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	return resp.StatusCode, data, nil
+}
+
+// UserPatch 改用户(role/disabled/permissions/display_name)
+func (c *OctopClient) UserPatch(id int, fields map[string]any) error {
+	code, data, err := c.doJSON("PATCH", fmt.Sprintf("/api/users/%d", id), fields)
+	if err != nil {
+		return err
+	}
+	if code >= 300 {
+		return fmt.Errorf("PATCH user -> %d: %s", code, truncate(data))
+	}
+	return nil
+}
+
+// UserUnlock 清除登录锁定
+func (c *OctopClient) UserUnlock(id int) error {
+	code, data, err := c.doJSON("POST", fmt.Sprintf("/api/users/%d/unlock-login", id), nil)
+	if err != nil {
+		return err
+	}
+	if code >= 300 {
+		return fmt.Errorf("unlock -> %d: %s", code, truncate(data))
+	}
+	return nil
+}
+
+// ProvidersRaw 供应商列表(key服务端已脱敏)
+func (c *OctopClient) ProvidersRaw() ([]map[string]any, error) {
+	code, data, err := c.doJSON("GET", "/api/admin/providers", nil)
+	if err != nil {
+		return nil, err
+	}
+	if code != 200 {
+		return nil, fmt.Errorf("GET providers -> %d: %s", code, truncate(data))
+	}
+	var out []map[string]any
+	json.Unmarshal(data, &out)
+	return out, nil
+}
+
+// ProviderCreate 新增供应商(name/kind/base_url/api_key/models)
+func (c *OctopClient) ProviderCreate(name, kind, baseURL, apiKey string, models []map[string]string) (map[string]any, error) {
+	body := map[string]any{"name": name, "kind": kind, "base_url": baseURL, "api_key": apiKey, "enabled": true}
+	if len(models) > 0 {
+		body["models"] = models
+	}
+	code, data, err := c.doJSON("POST", "/api/admin/providers", body)
+	if err != nil {
+		return nil, err
+	}
+	if code >= 300 {
+		return nil, fmt.Errorf("POST provider -> %d: %s", code, truncate(data))
+	}
+	var out map[string]any
+	json.Unmarshal(data, &out)
+	return out, nil
+}
+
+// ProviderPatch 改供应商(api_key/base_url/enabled/models)
+func (c *OctopClient) ProviderPatch(id int, fields map[string]any) error {
+	code, data, err := c.doJSON("PATCH", fmt.Sprintf("/api/admin/providers/%d", id), fields)
+	if err != nil {
+		return err
+	}
+	if code >= 300 {
+		return fmt.Errorf("PATCH provider -> %d: %s", code, truncate(data))
+	}
+	return nil
+}
+
+// ProviderDelete 删供应商(本地runtime供应商会被服务端拒)
+func (c *OctopClient) ProviderDelete(id int) error {
+	code, data, err := c.doJSON("DELETE", fmt.Sprintf("/api/admin/providers/%d", id), nil)
+	if err != nil {
+		return err
+	}
+	if code >= 300 {
+		return fmt.Errorf("DELETE provider -> %d: %s", code, truncate(data))
+	}
+	return nil
+}

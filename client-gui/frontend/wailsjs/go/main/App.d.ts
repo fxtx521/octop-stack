@@ -47,6 +47,14 @@ export function Login(arg1:string,arg2:string,arg3:string):Promise<main.LoginRes
 
 export function PickDirectory():Promise<string>;
 
+export function ProviderCreate(arg1:string,arg2:string,arg3:string,arg4:string,arg5:string):Promise<Record<string, any>>;
+
+export function ProviderDelete(arg1:number):Promise<Record<string, any>>;
+
+export function ProviderPatch(arg1:number,arg2:string):Promise<Record<string, any>>;
+
+export function ProvidersList():Promise<Array<Record<string, any>>>;
+
 export function ReadFile(arg1:string):Promise<Record<string, any>>;
 
 export function Resume(arg1:string,arg2:string,arg3:string):Promise<main.AskResult>;
@@ -62,3 +70,9 @@ export function SkillList(arg1:string):Promise<Array<Record<string, any>>>;
 export function StartupWorkspace():Promise<Record<string, any>>;
 
 export function TryResume():Promise<main.LoginResult>;
+
+export function UserPatch(arg1:number,arg2:string):Promise<Record<string, any>>;
+
+export function UserUnlock(arg1:number):Promise<Record<string, any>>;
+
+export function UsersList():Promise<Array<Record<string, any>>>;

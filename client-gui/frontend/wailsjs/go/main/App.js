@@ -90,6 +90,22 @@ export function PickDirectory() {
   return window['go']['main']['App']['PickDirectory']();
 }
 
+export function ProviderCreate(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['main']['App']['ProviderCreate'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function ProviderDelete(arg1) {
+  return window['go']['main']['App']['ProviderDelete'](arg1);
+}
+
+export function ProviderPatch(arg1, arg2) {
+  return window['go']['main']['App']['ProviderPatch'](arg1, arg2);
+}
+
+export function ProvidersList() {
+  return window['go']['main']['App']['ProvidersList']();
+}
+
 export function ReadFile(arg1) {
   return window['go']['main']['App']['ReadFile'](arg1);
 }
@@ -120,4 +136,16 @@ export function StartupWorkspace() {
 
 export function TryResume() {
   return window['go']['main']['App']['TryResume']();
+}
+
+export function UserPatch(arg1, arg2) {
+  return window['go']['main']['App']['UserPatch'](arg1, arg2);
+}
+
+export function UserUnlock(arg1) {
+  return window['go']['main']['App']['UserUnlock'](arg1);
+}
+
+export function UsersList() {
+  return window['go']['main']['App']['UsersList']();
 }

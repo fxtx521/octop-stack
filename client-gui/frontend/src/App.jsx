@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import Login from './components/Login.jsx'
 import Sidebar from './components/Sidebar.jsx'
 import ChatPane from './components/ChatPane.jsx'
+import { AdminUsers, AdminProviders } from './components/AdminManage.jsx'
 import RightPane from './components/RightPane.jsx'
 import Experts from './components/Experts.jsx'
 import { api } from './lib/octop.js'
@@ -204,6 +205,7 @@ function StubPage({ id }) {
 
 function AdminPane({ user, onBack }) {
   const [tab, setTab] = useState('overview')
+  // users/providers 用真组件, 其余JSON视图
   const [data, setData] = useState(null)
   useEffect(() => {
     (async () => {
@@ -221,14 +223,16 @@ function AdminPane({ user, onBack }) {
         <button className="chat-head-btn" onClick={onBack} title="返回">‹</button>
         <span className="admin-title">管理后台</span>
         <div className="seg">
-          {['overview', 'metrics', 'invites', 'audit'].map(t => (
+          {['overview', 'users', 'providers', 'metrics', 'invites', 'audit'].map(t => (
             <button key={t} className={'seg-item' + (tab === t ? ' on' : '')} onClick={() => setTab(t)}>
-              {{ overview: '总览', metrics: '用量', invites: '邀请码', audit: '审计' }[t]}
+              {{ overview: '总览', users: '用户', providers: '供应商', metrics: '用量', invites: '邀请码', audit: '审计' }[t]}
             </button>
           ))}
         </div>
       </div>
-      <pre className="admin-body">{data ? JSON.stringify(data, null, 2) : '加载中…'}</pre>
+      {tab === 'users' ? <AdminUsers /> :
+       tab === 'providers' ? <AdminProviders /> :
+       <pre className="admin-body">{data ? JSON.stringify(data, null, 2) : '加载中…'}</pre>}
     </div>
   )
 }

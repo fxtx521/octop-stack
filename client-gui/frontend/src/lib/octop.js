@@ -34,4 +34,12 @@ export const api = {
   allowedList: () => A().AllowedList(),
   allowedAdd: (dir) => A().AllowedAdd(dir),
   allowedRemove: (dir) => A().AllowedRemove(dir),
+  // 用户管理+模型供应商
+  usersList: () => A().UsersList(),
+  userPatch: (id, fields) => A().UserPatch(id, JSON.stringify(fields)),
+  userUnlock: (id) => A().UserUnlock(id),
+  providersList: () => A().ProvidersList(),
+  providerCreate: (name, kind, url, key, models) => A().ProviderCreate(name, kind, url, key, models || ''),
+  providerPatch: (id, fields) => A().ProviderPatch(id, JSON.stringify(fields)),
+  providerDelete: (id) => A().ProviderDelete(id),
 }

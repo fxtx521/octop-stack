@@ -587,3 +587,90 @@ func (a *App) AllowedRemove(dir string) map[string]any {
 	a.loadAllowed(out)
 	return map[string]any{"ok": true}
 }
+
+// ---- 用户管理 + 模型供应商绑定 ----
+
+func (a *App) UsersList() []map[string]any {
+	if a.client == nil {
+		return nil
+	}
+	rows, err := a.client.UsersRaw()
+	if err != nil {
+		return nil
+	}
+	return rows
+}
+
+func (a *App) UserPatch(id int, fieldsJSON string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	fields := map[string]any{}
+	if err := json.Unmarshal([]byte(fieldsJSON), &fields); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	if err := a.client.UserPatch(id, fields); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
+
+func (a *App) UserUnlock(id int) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	if err := a.client.UserUnlock(id); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
+
+func (a *App) ProvidersList() []map[string]any {
+	if a.client == nil {
+		return nil
+	}
+	rows, err := a.client.ProvidersRaw()
+	if err != nil {
+		return nil
+	}
+	return rows
+}
+
+func (a *App) ProviderCreate(name, kind, baseURL, apiKey, modelsJSON string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	var models []map[string]string
+	if modelsJSON != "" {
+		json.Unmarshal([]byte(modelsJSON), &models)
+	}
+	row, err := a.client.ProviderCreate(name, kind, baseURL, apiKey, models)
+	if err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true, "provider": row}
+}
+
+func (a *App) ProviderPatch(id int, fieldsJSON string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	fields := map[string]any{}
+	if err := json.Unmarshal([]byte(fieldsJSON), &fields); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	if err := a.client.ProviderPatch(id, fields); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
+
+func (a *App) ProviderDelete(id int) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	if err := a.client.ProviderDelete(id); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
