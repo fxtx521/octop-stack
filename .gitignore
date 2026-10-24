@@ -10,3 +10,4 @@ dist/
 client/octop-client
 client/client
 client/octop-client.exe
+client-gui/build/windows/installer/tmp/
