@@ -26,8 +26,8 @@ export function Apply(arg1, arg2) {
   return window['go']['main']['App']['Apply'](arg1, arg2);
 }
 
-export function Ask(arg1) {
-  return window['go']['main']['App']['Ask'](arg1);
+export function Ask(arg1, arg2, arg3) {
+  return window['go']['main']['App']['Ask'](arg1, arg2, arg3);
 }
 
 export function ClearSession() {
@@ -36,6 +36,10 @@ export function ClearSession() {
 
 export function CurrentWorkspace() {
   return window['go']['main']['App']['CurrentWorkspace']();
+}
+
+export function ListExperts() {
+  return window['go']['main']['App']['ListExperts']();
 }
 
 export function ListFiles() {
@@ -54,8 +58,8 @@ export function ReadFile(arg1) {
   return window['go']['main']['App']['ReadFile'](arg1);
 }
 
-export function Resume(arg1) {
-  return window['go']['main']['App']['Resume'](arg1);
+export function Resume(arg1, arg2, arg3) {
+  return window['go']['main']['App']['Resume'](arg1, arg2, arg3);
 }
 
 export function SetWorkspace(arg1) {

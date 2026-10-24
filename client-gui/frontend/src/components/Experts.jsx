@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+import { api } from '../lib/octop.js'
 
 function tagsOf(e) {
   // 专家数据里 skills/tags 形态不一, 兜底提取展示标签
@@ -16,7 +17,20 @@ function descOf(e) {
 
 export default function Experts({ user, onSummon }) {
   const [q, setQ] = useState('')
-  const experts = user?.experts || []
+  const [live, setLive] = useState(null) // 进页时从云端刷新的专家列表
+  const [stale, setStale] = useState(false)
+  useEffect(() => {
+    let gone = false
+    ;(async () => {
+      try {
+        const fresh = await api.listExperts()
+        if (!gone && fresh && fresh.length) setLive(fresh)
+        else if (!gone) setStale(true)
+      } catch { if (!gone) setStale(true) }
+    })()
+    return () => { gone = true }
+  }, [])
+  const experts = live || user?.experts || []
   const list = useMemo(() => {
     if (!q.trim()) return experts
     const k = q.trim().toLowerCase()
@@ -39,6 +53,7 @@ export default function Experts({ user, onSummon }) {
         />
       </div>
       <div className="market-body">
+        {stale && <div className="tree-empty">云端专家列表拉取失败, 显示登录时缓存</div>}
         {list.length === 0 ? (
           <div className="tree-empty">{q ? '没有匹配的专家' : '暂无专家数据'}</div>
         ) : (

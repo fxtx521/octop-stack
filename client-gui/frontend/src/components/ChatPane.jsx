@@ -32,7 +32,8 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
     const msgs = [...task.msgs, { role: 'user', text: content }]
     patchTask(task.id, { msgs, busy: true, title: task.title === '新任务' ? content.slice(0, 18) : task.title })
     try {
-      const r = await api.ask(content)
+      // thread 跟任务走: 有 thread 续聊(同任务同云端会话), 无则云端新建
+      const r = await api.ask(task.expert, task.thread, content)
       if (!r.ok) {
         patchTask(task.id, { busy: false, msgs: [...msgs, { role: 'sys', text: r.msg || '请求失败' }] })
         return
@@ -41,6 +42,7 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
       if (r.answer) add.push({ role: 'ai', text: r.answer })
       patchTask(task.id, {
         busy: false,
+        thread: r.thread || task.thread || '',
         msgs: [...msgs, ...add],
         pending: (r.ops && r.ops.length ? r.ops : []),
       })
@@ -65,10 +67,10 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
       let files = task.files
       try { files = (await api.listFiles()) || [] } catch { /* ignore */ }
       if (ok && r.feedback) {
-        // 把读取到的内容喂回专家, 让它继续任务
-        const r2 = await api.resume('[客户端已执行] 结果如下, 请继续你的任务(还需操作文件继续输出fileops):\n' + r.feedback)
+        // 把读取到的内容喂回专家, 让它继续任务(同任务同 thread)
+        const r2 = await api.resume(task.expert, task.thread, '[客户端已执行] 结果如下, 请继续你的任务(还需操作文件继续输出fileops):\n' + r.feedback)
         if (r2.answer) add.push({ role: 'ai', text: r2.answer })
-        patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add], files, pending: r2.ops?.length ? r2.ops : [] })
+        patchTask(task.id, { busy: false, thread: r2.thread || task.thread || '', msgs: [...task.msgs, ...add], files, pending: r2.ops?.length ? r2.ops : [] })
         return
       }
       patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add], files })

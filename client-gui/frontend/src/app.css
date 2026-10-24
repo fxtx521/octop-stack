@@ -91,6 +91,16 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 18px;
 }
 .sb-task.on .sb-task-title { font-weight: 600; }
+.sb-task-ren {
+  opacity: 0; font-size: 12px; color: var(--ink-3); width: 22px; height: 22px;
+  border-radius: 4px; flex-shrink: 0; transition: opacity 0.12s;
+}
+.sb-task:hover .sb-task-ren { opacity: 1; }
+.sb-task-ren:hover { background: var(--line); color: var(--ink); }
+.sb-rename {
+  width: 100%; font-size: 12px; padding: 1px 4px; border: 1px solid var(--brand);
+  border-radius: 4px; background: #fff; color: var(--ink); outline: none;
+}
 .sb-task-del {
   opacity: 0; font-size: 13px; color: var(--ink-3); width: 22px; height: 22px;
   border-radius: 4px; flex-shrink: 0; transition: opacity 0.12s;

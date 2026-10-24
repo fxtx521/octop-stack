@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 const NAV = [
   { id: 'chat', ic: '✚', label: '新建任务' },
@@ -10,8 +10,10 @@ const NAV = [
 
 const STATUS_COLOR = { doing: 'var(--brand)', done: '#bfc2c7', error: 'var(--danger)' }
 
-export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen, onDelete, onLogout }) {
+export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen, onDelete, onRename, onLogout }) {
   const u = user?.usage || ''
+  const [editId, setEditId] = useState(null)
+  const [draft, setDraft] = useState('')
   return (
     <aside className="sb">
       <div className="sb-top">
@@ -44,16 +46,40 @@ export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen
             key={t.id}
             className={'sb-task' + (t.id === curId && (view === 'chat' || view === 'files') ? ' on' : '')}
             onClick={() => onOpen(t.id)}
+            onDoubleClick={e => { e.stopPropagation(); setEditId(t.id); setDraft(t.title) }}
             title={t.title}
           >
             <span
               className="sb-task-dot"
               style={{ background: t.busy ? STATUS_COLOR.doing : t.pending?.length ? 'var(--warn)' : STATUS_COLOR.done }}
             />
-            <span className="sb-task-title">{t.title}</span>
+            <span className="sb-task-title">
+              {editId === t.id ? (
+                <input
+                  className="sb-rename"
+                  autoFocus
+                  value={draft}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => setDraft(e.target.value)}
+                  onBlur={() => {
+                    if (draft.trim() && onRename) onRename(t.id, draft.trim())
+                    setEditId(null)
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') e.target.blur()
+                    if (e.key === 'Escape') setEditId(null)
+                  }}
+                />
+              ) : t.title}
+            </span>
+            <button
+              className="sb-task-ren"
+              onClick={e => { e.stopPropagation(); setEditId(t.id); setDraft(t.title) }}
+              title="重命名"
+            >✎</button>
             <button
               className="sb-task-del"
-              onClick={e => { e.stopPropagation(); onDelete(t.id) }}
+              onClick={e => { e.stopPropagation(); if (window.confirm('删除任务「' + t.title + '」?')) onDelete(t.id) }}
               title="删除"
             >×</button>
           </div>

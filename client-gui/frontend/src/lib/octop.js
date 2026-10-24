@@ -3,8 +3,9 @@ const A = () => window.go?.main?.App
 
 export const api = {
   login: (srv, user, pass) => A().Login(srv, user, pass),
-  ask: (text) => A().Ask(text),
-  resume: (msg) => A().Resume(msg),
+  ask: (expert, thread, text) => A().Ask(expert || '', thread || '', text),
+  resume: (expert, thread, msg) => A().Resume(expert || '', thread || '', msg),
+  listExperts: () => A().ListExperts(),
   tryResume: () => A().TryResume(),
   clearSession: () => A().ClearSession(),
   apply: (ops, approved) => A().Apply(JSON.stringify(ops), approved),

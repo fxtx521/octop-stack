@@ -19,7 +19,7 @@ type App struct {
 	client   *core.OctopClient
 	WSRoot   string // 已eval过的工作区根
 	Expert   string // 当前专家ID
-	Thread   string // 当前会话thread
+	Thread   string // 兼容保留: AskResult用
 	Manifest string
 }
 
@@ -227,8 +227,8 @@ func (a *App) ClearSession() {
 	pref.Session = nil
 	a.writePref(pref)
 	a.client = nil
-	a.Expert = ""
 	a.Thread = ""
+	a.Expert = ""
 }
 
 type prefFile struct {
@@ -252,9 +252,13 @@ func (a *App) writePref(p prefFile) {
 }
 
 // Ask 向专家提问, 自动带工作区清单+fileops协议说明
-func (a *App) Ask(message string) AskResult {
+// expertID/threadID 由前端按任务传入: 无threadID=云端新会话, 有=续聊(同任务隔离)
+func (a *App) Ask(expertID, threadID, message string) AskResult {
 	if a.client == nil {
 		return AskResult{Msg: "未登录"}
+	}
+	if expertID == "" {
+		expertID = a.Expert
 	}
 	msg := message
 	if a.WSRoot != "" {
@@ -263,25 +267,51 @@ func (a *App) Ask(message string) AskResult {
 			"重要: 清单里的路径就是fileops的path, 以工作区根为基准, 不要在path前再加工作区目录名。新建文件同理。\n" +
 			"注意: 你运行在云端, 没有用户电脑的磁盘访问。你记忆里的目录状态不是用户电脑的真实状态, 以这条消息里的清单为唯一事实。需要文件内容时, 输出read的fileops计划并停下等待, 客户端会把内容回传给你。"
 	}
-	answer, thread, err := a.client.AskExpert(a.Expert, msg)
-	if err != nil {
-		return AskResult{Msg: err.Error()}
+	var answer, thread string
+	var err error
+	if threadID != "" {
+		// 同任务已有会话: 续聊, 不再开新 thread
+		answer, thread, err = a.client.ResumeExpert(expertID, threadID, msg)
+		if err != nil {
+			return AskResult{Msg: err.Error()}
+		}
+	} else {
+		answer, thread, err = a.client.AskExpert(expertID, msg)
+		if err != nil {
+			return AskResult{Msg: err.Error()}
+		}
 	}
-	a.Thread = thread
 	return AskResult{OK: true, Answer: answer, Thread: thread, Ops: core.ParseOps(answer)}
 }
 
-// Resume 续thread(如喂read结果)
-func (a *App) Resume(message string) AskResult {
-	if a.client == nil || a.Thread == "" {
+// Resume 续指定任务的thread(如喂read结果)
+func (a *App) Resume(expertID, threadID, message string) AskResult {
+	if a.client == nil {
+		return AskResult{Msg: "未登录"}
+	}
+	if expertID == "" {
+		expertID = a.Expert
+	}
+	if threadID == "" {
 		return AskResult{Msg: "无可续会话"}
 	}
-	answer, thread, err := a.client.ResumeExpert(a.Expert, a.Thread, message)
+	answer, thread, err := a.client.ResumeExpert(expertID, threadID, message)
 	if err != nil {
 		return AskResult{Msg: err.Error()}
 	}
-	a.Thread = thread
 	return AskResult{OK: true, Answer: answer, Thread: thread, Ops: core.ParseOps(answer)}
+}
+
+// ListExperts 重新拉取云端专家列表(广场同步用)
+func (a *App) ListExperts() []core.Expert {
+	if a.client == nil {
+		return nil
+	}
+	experts, err := a.client.ListExperts()
+	if err != nil {
+		return nil
+	}
+	return experts
 }
 
 // ReadFile 预览工作区内文件内容(前端点击文件用)

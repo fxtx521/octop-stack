@@ -33,6 +33,7 @@ export default function App() {
       seq: taskSeq++,
       title: '新任务',
       expert: user?.experts?.[0]?.expert_id || user?.experts?.[0]?.id || '',
+      thread: '',    // 云端会话ID: 空=新会话, 首次Ask后绑定
       workspace: tasks[0]?.workspace || '',
       msgs: [],      // {role:'user|ai|sys', text, ops?, ts}
       pending: [],   // 审批队列
@@ -95,6 +96,10 @@ export default function App() {
     setView('chat')
   }
 
+  function renameTask(id, title) {
+    setTasks(ts => ts.map(t => (t.id === id ? { ...t, title } : t)))
+  }
+
   function delTask(id) {
     setTasks(ts => {
       const left = ts.filter(t => t.id !== id)
@@ -121,6 +126,7 @@ export default function App() {
       seq: taskSeq++,
       title: '新任务 · ' + (e.name || '专家'),
       expert: e.expert_id || e.id || '',
+      thread: '',
       workspace: cur?.workspace || '',
       msgs: [],
       pending: [],
@@ -147,6 +153,7 @@ export default function App() {
         onNew={newTask}
         onOpen={openTask}
         onDelete={delTask}
+        onRename={renameTask}
         onNav={setView}
         onLogout={logout}
         view={view === 'files' ? 'chat' : view}
