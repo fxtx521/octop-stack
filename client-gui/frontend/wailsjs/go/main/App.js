@@ -30,6 +30,10 @@ export function Ask(arg1) {
   return window['go']['main']['App']['Ask'](arg1);
 }
 
+export function CurrentWorkspace() {
+  return window['go']['main']['App']['CurrentWorkspace']();
+}
+
 export function ListFiles() {
   return window['go']['main']['App']['ListFiles']();
 }
@@ -52,4 +56,8 @@ export function Resume(arg1) {
 
 export function SetWorkspace(arg1) {
   return window['go']['main']['App']['SetWorkspace'](arg1);
+}
+
+export function StartupWorkspace() {
+  return window['go']['main']['App']['StartupWorkspace']();
 }

@@ -8,8 +8,15 @@ import './app.css'
 
 let taskSeq = 1
 
+// 全局错误兜底: 任何未捕获异常显示红条, 不再静默吞错
+let showFatal = () => {}
+window.addEventListener('error', e => showFatal(e.message + '\n' + (e.filename || '') + ':' + (e.lineno || '')))
+window.addEventListener('unhandledrejection', e => showFatal(String(e.reason)))
+
 export default function App() {
   const [user, setUser] = useState(null)          // {role, experts, usage}
+  const [fatal, setFatal] = useState('')
+  useEffect(() => { showFatal = setFatal }, [])
   const [tasks, setTasks] = useState([])
   const [curId, setCurId] = useState(null)
   const [view, setView] = useState('chat')        // chat | files | admin
@@ -37,12 +44,36 @@ export default function App() {
   }
 
   async function doLogin(srv, u, p) {
-    const r = await api.login(srv, u, p)
-    if (r.ok) {
-      setUser({ role: r.role, experts: r.experts || [], usage: r.usage })
-      newTask()
+    try {
+      const r = await api.login(srv, u, p)
+      if (r.ok) {
+        // 恢复上次工作区 + 文件树
+        let ws = null
+        try {
+          const w = await api.startupWorkspace()
+          if (w.ok) ws = w.root
+        } catch { /* ignore */ }
+        setUser({ name: u, role: r.role || 'member', experts: r.experts || [], usage: r.usage || null })
+        const t = {
+          id: 't' + (taskSeq++),
+          title: '新任务',
+          msgs: [],
+          pending: [],
+          files: [],
+          busy: false,
+          workspace: ws,
+        }
+        if (ws) {
+          try { t.files = (await api.listFiles()) || [] } catch { /* ignore */ }
+        }
+        setTasks([t])
+        setCurId(t.id)
+      } else {
+        throw new Error(r.msg || '登录失败')
+      }
+    } catch (e) {
+      throw e
     }
-    return r
   }
 
   function openTask(id) {
@@ -62,20 +93,26 @@ export default function App() {
 
   return (
     <div className="ws">
-      <Sidebar
-        user={user}
-        tasks={tasks}
-        curId={curId}
-        onNew={newTask}
-        onOpen={openTask}
-        onDelete={delTask}
-        onAdmin={() => setView('admin')}
-        view={view}
-      />
+      {fatal && (
+        <div className="fatal-bar" onClick={() => setFatal('')}>
+          ⚠ {fatal.slice(0, 160)}（点我关闭）
+        </div>
+      )}
+      <div className="ws-row">
       {view === 'admin' ? (
         <AdminPane user={user} />
       ) : (
         <>
+          <Sidebar
+            user={user}
+            tasks={tasks}
+            curId={curId}
+            onNew={newTask}
+            onOpen={openTask}
+            onDelete={delTask}
+            onAdmin={() => setView('admin')}
+            view={view}
+          />
           <ChatPane
             key={curId}
             user={user}
@@ -91,6 +128,7 @@ export default function App() {
           />
         </>
       )}
+      </div>
     </div>
   )
 }

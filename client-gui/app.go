@@ -85,7 +85,47 @@ func (a *App) SetWorkspace(root string) map[string]any {
 	}
 	a.WSRoot = eval
 	a.Manifest = manifest
+	a.saveWsPref(eval)
 	return map[string]any{"ok": true, "manifest": manifest, "root": root}
+}
+
+// wsPrefPath 工作区偏好文件
+func wsPrefPath() string {
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".octop-workbench.json")
+}
+
+func (a *App) saveWsPref(root string) {
+	os.WriteFile(wsPrefPath(), []byte(fmt.Sprintf(`{"last_workspace":%q}`, root)), 0600)
+}
+
+// StartupWorkspace 启动时恢复上次工作区
+func (a *App) StartupWorkspace() map[string]any {
+	data, err := os.ReadFile(wsPrefPath())
+	if err == nil {
+		var pref struct {
+			LastWorkspace string `json:"last_workspace"`
+		}
+		if json.Unmarshal(data, &pref) == nil && pref.LastWorkspace != "" {
+			eval, err := core.WorkspaceRoot(pref.LastWorkspace)
+			if err == nil {
+				if manifest, err := core.BuildManifest(eval); err == nil {
+					a.WSRoot = eval
+					a.Manifest = manifest
+					return map[string]any{"ok": true, "root": pref.LastWorkspace, "manifest": manifest}
+				}
+			}
+		}
+	}
+	return map[string]any{"ok": false}
+}
+
+// CurrentWorkspace 返回当前工作区(前端刷新用)
+func (a *App) CurrentWorkspace() map[string]any {
+	if a.WSRoot == "" {
+		return map[string]any{"ok": false}
+	}
+	return map[string]any{"ok": true, "root": a.WSRoot}
 }
 
 // ListFiles 返回工作区文件列表(前端文件树)

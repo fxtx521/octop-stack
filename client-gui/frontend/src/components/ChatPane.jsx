@@ -54,14 +54,17 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
       if (r.results?.length) {
         add.push({ role: 'sys', text: r.results.map(x => x.op + ' ' + x.path + ' → ' + x.status).join('\n') })
       }
+      // 执行后刷新文件树(写/删/移都会改变目录内容)
+      let files = task.files
+      try { files = (await api.listFiles()) || [] } catch { /* ignore */ }
       if (ok && r.feedback) {
         // 把读取到的内容喂回专家, 让它继续任务
         const r2 = await api.resume('[客户端已执行] 结果如下, 请继续你的任务(还需操作文件继续输出fileops):\n' + r.feedback)
         if (r2.answer) add.push({ role: 'ai', text: r2.answer })
-        patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add], pending: r2.ops?.length ? r2.ops : [] })
+        patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add], files, pending: r2.ops?.length ? r2.ops : [] })
         return
       }
-      patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add] })
+      patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add], files })
     } catch (e) {
       patchTask(task.id, { busy: false, msgs: [...task.msgs, { role: 'sys', text: '执行错误: ' + e }] })
     }

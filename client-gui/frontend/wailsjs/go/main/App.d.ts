@@ -16,6 +16,8 @@ export function Apply(arg1:string,arg2:boolean):Promise<main.ApplyResult>;
 
 export function Ask(arg1:string):Promise<main.AskResult>;
 
+export function CurrentWorkspace():Promise<Record<string, any>>;
+
 export function ListFiles():Promise<Array<string>>;
 
 export function Login(arg1:string,arg2:string,arg3:string):Promise<main.LoginResult>;
@@ -27,3 +29,5 @@ export function ReadFile(arg1:string):Promise<Record<string, any>>;
 export function Resume(arg1:string):Promise<main.AskResult>;
 
 export function SetWorkspace(arg1:string):Promise<Record<string, any>>;
+
+export function StartupWorkspace():Promise<Record<string, any>>;
