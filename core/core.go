@@ -53,6 +53,16 @@ func (c *OctopClient) Login(username, password string) error {
 	return nil
 }
 
+// TryToken 用已存token恢复会话, 验证有效才返回nil
+func (c *OctopClient) TryToken(server, token string) error {
+	c.BaseURL = strings.TrimRight(server, "/")
+	c.Token = token
+	if _, err := c.ListExperts(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // AdminGet 管理端GET(需admin token)
 func (c *OctopClient) AdminGet(path string) (map[string]any, error) {
 	req, err := http.NewRequest("GET", c.BaseURL+path, nil)

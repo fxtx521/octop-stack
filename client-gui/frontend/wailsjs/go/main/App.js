@@ -61,3 +61,7 @@ export function SetWorkspace(arg1) {
 export function StartupWorkspace() {
   return window['go']['main']['App']['StartupWorkspace']();
 }
+
+export function TryResume() {
+  return window['go']['main']['App']['TryResume']();
+}

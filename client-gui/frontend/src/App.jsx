@@ -43,31 +43,44 @@ export default function App() {
     setView('chat')
   }
 
+  async function enterWorkspace(r, userName) {
+    let ws = null
+    try {
+      const w = await api.startupWorkspace()
+      if (w.ok) ws = w.root
+    } catch { /* ignore */ }
+    setUser({ name: userName, role: r.role || 'member', experts: r.experts || [], usage: r.usage || null })
+    const t = {
+      id: 't' + (taskSeq++),
+      title: '新任务',
+      msgs: [],
+      pending: [],
+      files: [],
+      busy: false,
+      workspace: ws,
+    }
+    if (ws) {
+      try { t.files = (await api.listFiles()) || [] } catch { /* ignore */ }
+    }
+    setTasks([t])
+    setCurId(t.id)
+  }
+
+  // 启动即尝试免登录续会话
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const r = await api.tryResume()
+        if (r.ok) await enterWorkspace(r, r.user || '已登录用户')
+      } catch { /* 首次启动无会话, 走登录页 */ }
+    })()
+  }, [])
+
   async function doLogin(srv, u, p) {
     try {
       const r = await api.login(srv, u, p)
       if (r.ok) {
-        // 恢复上次工作区 + 文件树
-        let ws = null
-        try {
-          const w = await api.startupWorkspace()
-          if (w.ok) ws = w.root
-        } catch { /* ignore */ }
-        setUser({ name: u, role: r.role || 'member', experts: r.experts || [], usage: r.usage || null })
-        const t = {
-          id: 't' + (taskSeq++),
-          title: '新任务',
-          msgs: [],
-          pending: [],
-          files: [],
-          busy: false,
-          workspace: ws,
-        }
-        if (ws) {
-          try { t.files = (await api.listFiles()) || [] } catch { /* ignore */ }
-        }
-        setTasks([t])
-        setCurId(t.id)
+        await enterWorkspace(r, u)
       } else {
         throw new Error(r.msg || '登录失败')
       }

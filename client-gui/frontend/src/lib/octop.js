@@ -5,6 +5,7 @@ export const api = {
   login: (srv, user, pass) => A().Login(srv, user, pass),
   ask: (text) => A().Ask(text),
   resume: (msg) => A().Resume(msg),
+  tryResume: () => A().TryResume(),
   apply: (ops, approved) => A().Apply(JSON.stringify(ops), approved),
   listFiles: () => A().ListFiles(),
   readFile: (rel) => A().ReadFile(rel),

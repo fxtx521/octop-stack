@@ -37,6 +37,8 @@ type LoginResult struct {
 	OK      bool          `json:"ok"`
 	Role    string        `json:"role"`
 	Msg     string        `json:"msg"`
+	Server  string        `json:"server"`
+	User    string        `json:"user"`
 	Experts []core.Expert `json:"experts"`
 	Usage   string        `json:"usage"`
 }
@@ -96,7 +98,9 @@ func wsPrefPath() string {
 }
 
 func (a *App) saveWsPref(root string) {
-	os.WriteFile(wsPrefPath(), []byte(fmt.Sprintf(`{"last_workspace":%q}`, root)), 0600)
+	pref := a.readPref()
+	pref.LastWorkspace = root
+	a.writePref(pref)
 }
 
 // StartupWorkspace 启动时恢复上次工作区
@@ -163,6 +167,7 @@ func (a *App) Login(server, username, password string) LoginResult {
 		return LoginResult{Msg: "登录失败: " + err.Error()}
 	}
 	a.client = c
+	a.saveSession(server, username, c.Token)
 	experts, err := c.ListExperts()
 	if err != nil {
 		return LoginResult{Msg: "取专家列表失败: " + err.Error()}
@@ -172,6 +177,68 @@ func (a *App) Login(server, username, password string) LoginResult {
 		a.Expert = experts[0].ExpertID
 	}
 	return LoginResult{OK: true, Experts: experts, Usage: usage, Role: c.Role}
+}
+
+// TryResume 启动时用持久化会话自动续登(免重复登录)
+func (a *App) TryResume() LoginResult {
+	sess := a.loadSession()
+	if sess.Server == "" || sess.Token == "" {
+		return LoginResult{Msg: "无历史会话"}
+	}
+	c := core.NewClient(sess.Server)
+	if err := c.TryToken(sess.Server, sess.Token); err != nil {
+		return LoginResult{Msg: "会话过期"}
+	}
+	a.client = c
+	experts, err := c.ListExperts()
+	if err != nil {
+		return LoginResult{Msg: "取专家列表失败: " + err.Error()}
+	}
+	usage, _ := c.UsageSummary()
+	if len(experts) > 0 {
+		a.Expert = experts[0].ExpertID
+	}
+	return LoginResult{OK: true, Experts: experts, Usage: usage, Role: c.Role, Server: sess.Server, User: sess.Username}
+}
+
+type session struct {
+	Server   string `json:"server"`
+	Username string `json:"username"`
+	Token    string `json:"token"`
+}
+
+func (a *App) saveSession(server, username, token string) {
+	pref := a.readPref()
+	pref.Session = &session{Server: server, Username: username, Token: token}
+	a.writePref(pref)
+}
+
+func (a *App) loadSession() session {
+	pref := a.readPref()
+	if pref.Session != nil {
+		return *pref.Session
+	}
+	return session{}
+}
+
+type prefFile struct {
+	LastWorkspace string   `json:"last_workspace"`
+	Session       *session `json:"session,omitempty"`
+}
+
+func (a *App) readPref() prefFile {
+	data, err := os.ReadFile(wsPrefPath())
+	if err != nil {
+		return prefFile{}
+	}
+	var p prefFile
+	json.Unmarshal(data, &p)
+	return p
+}
+
+func (a *App) writePref(p prefFile) {
+	data, _ := json.Marshal(p)
+	os.WriteFile(wsPrefPath(), data, 0600)
 }
 
 // Ask 向专家提问, 自动带工作区清单+fileops协议说明

@@ -31,3 +31,5 @@ export function Resume(arg1:string):Promise<main.AskResult>;
 export function SetWorkspace(arg1:string):Promise<Record<string, any>>;
 
 export function StartupWorkspace():Promise<Record<string, any>>;
+
+export function TryResume():Promise<main.LoginResult>;

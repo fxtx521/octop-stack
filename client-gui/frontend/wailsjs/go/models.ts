@@ -133,6 +133,8 @@ export namespace main {
 	    ok: boolean;
 	    role: string;
 	    msg: string;
+	    server: string;
+	    user: string;
 	    experts: core.Expert[];
 	    usage: string;
 	
@@ -145,6 +147,8 @@ export namespace main {
 	        this.ok = source["ok"];
 	        this.role = source["role"];
 	        this.msg = source["msg"];
+	        this.server = source["server"];
+	        this.user = source["user"];
 	        this.experts = this.convertValues(source["experts"], core.Expert);
 	        this.usage = source["usage"];
 	    }
