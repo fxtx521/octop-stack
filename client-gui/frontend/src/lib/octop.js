@@ -30,4 +30,8 @@ export const api = {
   skillList: (agentID) => A().SkillList(agentID || 'main'),
   skillCreate: (agentID, slug, desc, body) => A().SkillCreate(agentID, slug, desc, body),
   skillDelete: (agentID, slug) => A().SkillDelete(agentID, slug),
+  // A档授权目录
+  allowedList: () => A().AllowedList(),
+  allowedAdd: (dir) => A().AllowedAdd(dir),
+  allowedRemove: (dir) => A().AllowedRemove(dir),
 }

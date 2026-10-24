@@ -64,11 +64,12 @@ type OpResult struct {
 }
 
 // ExecuteOps 在沙箱内执行操作计划(每个操作独立校验)
-func ExecuteOps(rootEval string, ops []FileOp, approved bool) []OpResult {
+// allowedEvals: A档授权目录(symlink展开后); 传nil=仅工作区
+func ExecuteOps(rootEval string, allowedEvals []string, ops []FileOp, approved bool) []OpResult {
 	var results []OpResult
 	for _, op := range ops {
 		r := OpResult{Op: op.Op, Path: op.Path}
-		full, err := resolveInWS(rootEval, op.Path)
+		full, err := ResolveAllowed(rootEval, allowedEvals, op.Path)
 		if err != nil {
 			r.Status, r.Detail = "rejected", err.Error()
 			results = append(results, r)
@@ -121,7 +122,7 @@ func ExecuteOps(rootEval string, ops []FileOp, approved bool) []OpResult {
 			r.Status = "done"
 			r.Detail = "已删除"
 		case "move":
-			dst, err := resolveInWS(rootEval, op.To)
+			dst, err := ResolveAllowed(rootEval, allowedEvals, op.To)
 			if err != nil {
 				r.Status, r.Detail = "rejected", "目标路径: " + err.Error()
 				break

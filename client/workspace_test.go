@@ -31,7 +31,7 @@ func TestResolveRejectsEscape(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, err := resolveInWS(eval, c.path)
+			_, err := ResolveInWS(eval, c.path)
 			if err == nil || !strings.Contains(err.Error(), c.wantErr) {
 				t.Fatalf("%s 应被拒(%s), 实际: %v", c.path, c.wantErr, err)
 			}
@@ -45,7 +45,7 @@ func TestResolveRejectsSymlinkEscape(t *testing.T) {
 	os.WriteFile(filepath.Join(outside, "secret.txt"), []byte("s"), 0o644)
 	// 工作区内放symlink指向外部
 	os.Symlink(outside, filepath.Join(dir, "linkdir"))
-	if _, err := resolveInWS(eval, "linkdir/secret.txt"); err == nil {
+	if _, err := ResolveInWS(eval, "linkdir/secret.txt"); err == nil {
 		t.Fatal("symlink逃逸必须被拒绝")
 	}
 }
@@ -54,7 +54,7 @@ func TestResolveAcceptsValid(t *testing.T) {
 	_, eval := makeWS(t)
 	// 注: 一切含..的路径都被拒(哪怕不出界), 这是刻意的从严设计, 便于审计
 	for _, p := range []string{"a.txt", "sub/b.md", "sub/new.txt"} {
-		if _, err := resolveInWS(eval, p); err != nil {
+		if _, err := ResolveInWS(eval, p); err != nil {
 			t.Fatalf("合法路径 %s 被拒: %v", p, err)
 		}
 	}
@@ -108,7 +108,7 @@ func TestExecuteOpsSandbox(t *testing.T) {
 		{Op: "delete", Path: "/etc/passwd"},
 		{Op: "move", Path: "a.txt", To: "sub/a-moved.txt"},
 	}
-	results := ExecuteOps(eval, ops, true)
+	results := ExecuteOps(eval, nil, ops, true)
 	if len(results) != 5 {
 		t.Fatalf("应5个结果: %+v", results)
 	}
@@ -146,7 +146,7 @@ func TestExecuteOpsSandbox(t *testing.T) {
 func TestExecuteOpsNeedsApproval(t *testing.T) {
 	_, eval := makeWS(t)
 	ops := []FileOp{{Op: "write", Path: "d.txt", Body: "x"}}
-	results := ExecuteOps(eval, ops, false)
+	results := ExecuteOps(eval, nil, ops, false)
 	if results[0].Status != "rejected" || results[0].Detail != "未获用户批准" {
 		t.Fatalf("未批准必须全拒: %+v", results[0])
 	}
@@ -171,7 +171,7 @@ func TestFormatOpsPlan(t *testing.T) {
 func TestAuditLogInWorkspace(t *testing.T) {
 	_, eval := makeWS(t)
 	ops := []FileOp{{Op: "write", Path: "x.txt", Body: "1"}}
-	results := ExecuteOps(eval, ops, true)
+	results := ExecuteOps(eval, nil, ops, true)
 	auditLog(eval, "tester", "E1", ops, results)
 	data, err := os.ReadFile(filepath.Join(eval, ".octop-audit.log"))
 	if err != nil {
@@ -179,5 +179,50 @@ func TestAuditLogInWorkspace(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "user=tester expert=E1 op=write") || !strings.Contains(string(data), "status=done") {
 		t.Fatalf("审计内容不对: %s", data)
+	}
+}
+
+// A档: 授权目录清单制测试
+func TestResolveAllowed(t *testing.T) {
+	ws := t.TempDir()
+	eval, _ := filepath.EvalSymlinks(ws)
+	allowed := t.TempDir()
+	allowedEval, _ := filepath.EvalSymlinks(allowed)
+	os.WriteFile(filepath.Join(allowedEval, "note.txt"), []byte("hi"), 0o644)
+	 stranger := t.TempDir() // 清单外
+	 strangerEval, _ := filepath.EvalSymlinks(stranger)
+
+	// 1. 授权目录内绝对路径: 放行
+	if p, err := ResolveAllowed(eval, []string{allowedEval}, filepath.Join(allowedEval, "note.txt")); err != nil {
+		t.Fatalf("授权目录内被拒: %v", err)
+	} else if p == "" {
+		t.Fatal("空路径")
+	}
+	// 2. 清单外绝对路径: 拒绝
+	if _, err := ResolveAllowed(eval, []string{allowedEval}, filepath.Join(strangerEval, "x.txt")); err == nil {
+		t.Fatal("清单外目录竟被放行")
+	}
+	// 3. 未授权时绝对路径一律拒绝
+	if _, err := ResolveAllowed(eval, nil, filepath.Join(allowedEval, "note.txt")); err == nil {
+		t.Fatal("无授权清单时绝对路径竟被放行")
+	}
+	// 4. 工作区内相对路径: 照常放行
+	os.WriteFile(filepath.Join(eval, "in-ws.txt"), []byte("ok"), 0o644)
+	if _, err := ResolveAllowed(eval, []string{allowedEval}, "in-ws.txt"); err != nil {
+		t.Fatalf("工作区相对路径被误拒: %v", err)
+	}
+	// 5. ..逃逸依旧拒绝
+	if _, err := ResolveAllowed(eval, []string{allowedEval}, "../"+filepath.Base(allowedEval)+"/note.txt"); err == nil {
+		t.Fatal("..逃逸被放行")
+	}
+	// 6. 授权目录内尚不存在的子文件(祖先链校验): 放行
+	if _, err := ResolveAllowed(eval, []string{allowedEval}, filepath.Join(allowedEval, "new", "f.txt")); err != nil {
+		t.Fatalf("授权目录内新建路径被误拒: %v", err)
+	}
+	// 7. ExecuteOps 集成: 授权目录内read放行
+	ops := []FileOp{{Op: "read", Path: filepath.Join(allowedEval, "note.txt"), Reason: "t"}}
+	results := ExecuteOps(eval, []string{allowedEval}, ops, true)
+	if len(results) != 1 || results[0].Status != "done" {
+		t.Fatalf("ExecuteOps授权目录read应done: %+v", results)
 	}
 }

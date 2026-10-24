@@ -20,7 +20,8 @@ type App struct {
 	WSRoot   string // 已eval过的工作区根
 	Expert   string // 当前专家ID
 	Thread   string // 兼容保留: AskResult用
-	Manifest string
+	Manifest    string
+	AllowedEval []string // A档授权目录(symlink展开后)
 }
 
 // NewApp creates a new App application struct
@@ -110,6 +111,9 @@ func (a *App) StartupWorkspace() map[string]any {
 		var pref struct {
 			LastWorkspace string `json:"last_workspace"`
 		}
+		var full prefFile
+		_ = json.Unmarshal(data, &full)
+		a.loadAllowed(full.AllowedDirs)
 		if json.Unmarshal(data, &pref) == nil && pref.LastWorkspace != "" {
 			eval, err := core.WorkspaceRoot(pref.LastWorkspace)
 			if err == nil {
@@ -234,6 +238,7 @@ func (a *App) ClearSession() {
 type prefFile struct {
 	LastWorkspace string   `json:"last_workspace"`
 	Session       *session `json:"session,omitempty"`
+	AllowedDirs   []string `json:"allowed_dirs,omitempty"` // A档: 全盘授权目录清单
 }
 
 func (a *App) readPref() prefFile {
@@ -266,6 +271,16 @@ func (a *App) Ask(expertID, threadID, message string) AskResult {
 			"\n如需操作文件, 请在回答末尾用 ```fileops 代码块输出JSON操作数组(op/path/body/to/reason), 只能用相对路径, 允许op: read/write/append/delete/move。不操作文件就不用输出该代码块。\n" +
 			"重要: 清单里的路径就是fileops的path, 以工作区根为基准, 不要在path前再加工作区目录名。新建文件同理。\n" +
 			"注意: 你运行在云端, 没有用户电脑的磁盘访问。你记忆里的目录状态不是用户电脑的真实状态, 以这条消息里的清单为唯一事实。需要文件内容时, 输出read的fileops计划并停下等待, 客户端会把内容回传给你。"
+		if len(a.AllowedEval) > 0 {
+			msg += "\n\n[授权目录]\n以下目录用户已授权访问, 可在fileops的path/to里直接用绝对路径: "
+			for i, d := range a.AllowedEval {
+				if i > 0 {
+					msg += ", "
+				}
+				msg += d
+			}
+			msg += "\n授权目录外的绝对路径一律会被拒绝; 工作区内仍用相对路径。"
+		}
 	}
 	var answer, thread string
 	var err error
@@ -403,7 +418,7 @@ func (a *App) Apply(opsJSON string, approved bool) ApplyResult {
 	if err := json.Unmarshal([]byte(opsJSON), &ops); err != nil {
 		return ApplyResult{OK: false}
 	}
-	results := core.ExecuteOps(a.WSRoot, ops, approved)
+	results := core.ExecuteOps(a.WSRoot, a.AllowedEval, ops, approved)
 	out := make([]OpResult2, 0, len(results))
 	var feedback strings.Builder
 	for _, r := range results {
@@ -516,5 +531,59 @@ func (a *App) SkillDelete(agentID, slug string) map[string]any {
 	if err := a.client.DeleteSkill(agentID, slug); err != nil {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
+	return map[string]any{"ok": true}
+}
+
+// ---- A档: 授权目录清单(全盘访问的白名单制) ----
+
+// loadAllowed 恢复授权目录并做symlink展开
+func (a *App) loadAllowed(dirs []string) {
+	a.AllowedEval = nil
+	for _, d := range dirs {
+		if ev, err := filepath.EvalSymlinks(d); err == nil {
+			a.AllowedEval = append(a.AllowedEval, ev)
+		}
+	}
+}
+
+func (a *App) AllowedList() []string {
+	pref := a.readPref()
+	return pref.AllowedDirs
+}
+
+func (a *App) AllowedAdd(dir string) map[string]any {
+	dir = strings.TrimSpace(dir)
+	if dir == "" {
+		return map[string]any{"ok": false, "error": "路径为空"}
+	}
+	if !filepath.IsAbs(dir) {
+		return map[string]any{"ok": false, "error": "必须是绝对路径"}
+	}
+	if _, err := os.Stat(dir); err != nil {
+		return map[string]any{"ok": false, "error": "目录不存在: " + dir}
+	}
+	pref := a.readPref()
+	for _, d := range pref.AllowedDirs {
+		if d == dir {
+			return map[string]any{"ok": false, "error": "已在清单中"}
+		}
+	}
+	pref.AllowedDirs = append(pref.AllowedDirs, dir)
+	a.writePref(pref)
+	a.loadAllowed(pref.AllowedDirs)
+	return map[string]any{"ok": true}
+}
+
+func (a *App) AllowedRemove(dir string) map[string]any {
+	pref := a.readPref()
+	out := pref.AllowedDirs[:0]
+	for _, d := range pref.AllowedDirs {
+		if d != dir {
+			out = append(out, d)
+		}
+	}
+	pref.AllowedDirs = out
+	a.writePref(pref)
+	a.loadAllowed(out)
 	return map[string]any{"ok": true}
 }

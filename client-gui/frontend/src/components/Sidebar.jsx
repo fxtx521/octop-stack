@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import AllowedDirs from './AllowedDirs.jsx'
 
 const NAV = [
   { id: 'chat', ic: '✚', label: '新建任务' },
@@ -14,6 +15,7 @@ export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen
   const u = user?.usage || ''
   const [editId, setEditId] = useState(null)
   const [draft, setDraft] = useState('')
+  const [showAllowed, setShowAllowed] = useState(false)
   return (
     <aside className="sb">
       <div className="sb-top">
@@ -93,8 +95,10 @@ export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen
           <div className="sb-user-role">{user?.role === 'admin' ? '管理员' : '成员'}</div>
           {u && <div className="sb-usage" title="用量">{u}</div>}
         </div>
+        <button className="sb-allowed" onClick={() => setShowAllowed(true)} title="授权目录">📁</button>
         <button className="sb-logout" onClick={onLogout} title="退出登录">⏻</button>
       </div>
+      {showAllowed && <AllowedDirs onClose={() => setShowAllowed(false)} />}
     </aside>
   )
 }

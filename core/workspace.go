@@ -67,6 +67,45 @@ func ResolveInWS(rootEval, rel string) (string, error) {
 	}
 }
 
+// ResolveAllowed A档: 相对路径仍限工作区; 绝对路径须落在授权目录清单内
+// allowedEvals 必须是已EvalSymlinks的授权目录
+func ResolveAllowed(rootEval string, allowedEvals []string, rel string) (string, error) {
+	rel = strings.TrimSpace(rel)
+	if !filepath.IsAbs(rel) {
+		return ResolveInWS(rootEval, rel)
+	}
+	ev, err := filepath.EvalSymlinks(filepath.Clean(rel))
+	if err != nil {
+		// 目标尚不存在: 校验其最深已存在祖先
+		cur := filepath.Clean(rel)
+		var anc string
+		for cur != filepath.Dir(cur) {
+			if e, err := filepath.EvalSymlinks(cur); err == nil {
+				anc = e
+				break
+			}
+			cur = filepath.Dir(cur)
+		}
+		if anc == "" {
+			return "", errEscape
+		}
+		ev = anc
+	}
+	if inRoot(ev, rootEval) || inRoot(filepath.Dir(ev), rootEval) {
+		return ev, nil
+	}
+	for _, a := range allowedEvals {
+		if ev == a || strings.HasPrefix(ev, a+string(filepath.Separator)) {
+			return ev, nil
+		}
+	}
+	return "", errEscape
+}
+
+func inRoot(p, root string) bool {
+	return p == root || strings.HasPrefix(p, root+string(filepath.Separator))
+}
+
 // buildManifest 生成工作区文件清单(供专家了解现场), 跳过隐藏文件和符号链接
 func BuildManifest(rootEval string) (string, error) {
 	var lines []string

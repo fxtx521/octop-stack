@@ -287,7 +287,7 @@ func main() {
 		fmt.Println()
 		fmt.Println(FormatOpsPlan(ops))
 		approved := readUserConfirm(reader)
-		results := ExecuteOps(wsEval, ops, approved)
+		results := ExecuteOps(wsEval, nil, ops, approved)
 		for _, r := range results {
 			switch r.Status {
 			case "done":
@@ -318,7 +318,7 @@ func main() {
 				if ops2 := ParseOps(cont); len(ops2) > 0 {
 					fmt.Println(FormatOpsPlan(ops2))
 					approved2 := readUserConfirm(reader)
-					results2 := ExecuteOps(wsEval, ops2, approved2)
+					results2 := ExecuteOps(wsEval, nil, ops2, approved2)
 					for _, r := range results2 {
 						switch r.Status {
 						case "done":

@@ -46,6 +46,18 @@ export function AgentsManage() {
   return window['go']['main']['App']['AgentsManage']();
 }
 
+export function AllowedAdd(arg1) {
+  return window['go']['main']['App']['AllowedAdd'](arg1);
+}
+
+export function AllowedList() {
+  return window['go']['main']['App']['AllowedList']();
+}
+
+export function AllowedRemove(arg1) {
+  return window['go']['main']['App']['AllowedRemove'](arg1);
+}
+
 export function Apply(arg1, arg2) {
   return window['go']['main']['App']['Apply'](arg1, arg2);
 }

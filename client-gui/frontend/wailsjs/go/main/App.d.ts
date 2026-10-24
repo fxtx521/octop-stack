@@ -25,6 +25,12 @@ export function AgentUpdate(arg1:string,arg2:string):Promise<Record<string, any>
 
 export function AgentsManage():Promise<Array<Record<string, any>>>;
 
+export function AllowedAdd(arg1:string):Promise<Record<string, any>>;
+
+export function AllowedList():Promise<Array<string>>;
+
+export function AllowedRemove(arg1:string):Promise<Record<string, any>>;
+
 export function Apply(arg1:string,arg2:boolean):Promise<main.ApplyResult>;
 
 export function Ask(arg1:string,arg2:string,arg3:string):Promise<main.AskResult>;
