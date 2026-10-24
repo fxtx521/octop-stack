@@ -485,3 +485,36 @@ func (a *App) AgentDelete(id string) map[string]any {
 	}
 	return map[string]any{"ok": true}
 }
+
+// ---- 技能库绑定 ----
+
+func (a *App) SkillList(agentID string) []map[string]any {
+	if a.client == nil {
+		return nil
+	}
+	rows, err := a.client.ListSkills(agentID)
+	if err != nil {
+		return nil
+	}
+	return rows
+}
+
+func (a *App) SkillCreate(agentID, slug, description, body string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	if err := a.client.CreateSkill(agentID, slug, description, body); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}
+
+func (a *App) SkillDelete(agentID, slug string) map[string]any {
+	if msg := a.AgentEnsure(); msg != "" {
+		return map[string]any{"ok": false, "error": msg}
+	}
+	if err := a.client.DeleteSkill(agentID, slug); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	return map[string]any{"ok": true}
+}

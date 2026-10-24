@@ -380,3 +380,68 @@ func truncate(b []byte) string {
 	}
 	return s
 }
+
+// ---- 技能库 (官方 /api/agents/{id}/skills, Octop 1.0.2 自带) ----
+
+// ListSkills 拉某专家的技能列表(内置+workspace)
+func (c *OctopClient) ListSkills(agentID string) ([]map[string]any, error) {
+	req, _ := http.NewRequest("GET", c.BaseURL+"/api/agents/"+agentID+"/skills", nil)
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("GET skills -> %d: %s", resp.StatusCode, truncate(data))
+	}
+	var out []map[string]any
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// skillMD 组装 SKILL.md (frontmatter: name/description + 正文)
+func skillMD(slug, description, body string) string {
+	return "---\nname: " + slug + "\ndescription: " + description + "\n---\n\n" + body + "\n"
+}
+
+// CreateSkill 给专家新建一个技能(SKILL.md 形态, 与官方ZIP导入同构)
+func (c *OctopClient) CreateSkill(agentID, slug, description, body string) error {
+	payload := map[string]any{
+		"name":    slug,
+		"content": skillMD(slug, description, body),
+	}
+	j, _ := json.Marshal(payload)
+	req, _ := http.NewRequest("POST", c.BaseURL+"/api/agents/"+agentID+"/skills", bytes.NewReader(j))
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		data, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("POST skill -> %d: %s", resp.StatusCode, truncate(data))
+	}
+	return nil
+}
+
+// DeleteSkill 删除专家技能(软删, 官方204)
+func (c *OctopClient) DeleteSkill(agentID, slug string) error {
+	req, _ := http.NewRequest("DELETE", c.BaseURL+"/api/agents/"+agentID+"/skills/"+slug, nil)
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 && resp.StatusCode != 204 {
+		data, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("DELETE skill -> %d: %s", resp.StatusCode, truncate(data))
+	}
+	return nil
+}

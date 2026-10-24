@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/octop.js'
+import SkillPanel from './SkillPanel.jsx'
 
 function tagsOf(e) {
   // 专家数据里 skills/tags 形态不一, 兜底提取展示标签
@@ -17,7 +18,7 @@ function descOf(e) {
 
 // 新建/编辑专家表单
 function ExpertForm({ initial, onDone, onCancel }) {
-  const editing = !!initial?.agentID
+  const editing = !!(initial?.agentID || initial?.agent_id)
   const [f, setF] = useState({
     name: initial?.name || '',
     description: initial?.description || '',
@@ -33,7 +34,7 @@ function ExpertForm({ initial, onDone, onCancel }) {
     setBusy(true); setErr('')
     try {
       const r = editing
-        ? await api.agentUpdate(initial.agentID, {
+        ? await api.agentUpdate(initial.agent_id || initial.agentID, {
             name: f.name, description: f.description,
             system_prompt: f.system_prompt, welcome_message: f.welcome_message,
           })
@@ -81,6 +82,7 @@ export default function Experts({ user, onSummon }) {
   const [manage, setManage] = useState(false) // 管理视图(含启停/编辑/删除)
   const [rows, setRows] = useState([]) // /api/agents 原始行(state/agentID)
   const [form, setForm] = useState(null) // null | {} 新建 | agent 编辑
+  const [sklOf, setSklOf] = useState(null) // 技能面板针对的专家
   const [msg, setMsg] = useState('')
   const refresh = async () => {
     try {
@@ -111,14 +113,14 @@ export default function Experts({ user, onSummon }) {
   }, [merged, q])
   const doToggle = async (e, ev) => {
     ev.stopPropagation()
-    const id = e.agentID; if (!id) { setMsg('该专家无实例ID(可能是云端预设), 无法启停'); return }
+    const id = e.agent_id || e.agentID; if (!id) { setMsg('该专家无实例ID(可能是云端预设), 无法启停'); return }
     const r = await api.agentToggle(id, e.state === 'running' ? 'stop' : 'start')
     setMsg(r?.ok ? '' : (r?.error || '操作失败'))
     refresh()
   }
   const doDelete = async (e, ev) => {
     ev.stopPropagation()
-    const id = e.agentID
+    const id = e.agent_id || e.agentID
     if (!id) { setMsg('该专家无实例ID, 无法删除'); return }
     if (!window.confirm(`删除专家「${e.name}」? 其会话历史保留在云端`)) return
     const r = await api.agentDelete(id)
@@ -128,6 +130,11 @@ export default function Experts({ user, onSummon }) {
   const doEdit = (e, ev) => {
     ev.stopPropagation()
     setForm(e)
+  }
+  const doSkills = (e, ev) => {
+    ev.stopPropagation()
+    ev.preventDefault()
+    setSklOf(e)
   }
 
   return (
@@ -179,6 +186,7 @@ export default function Experts({ user, onSummon }) {
                         {e.state === 'running' ? '停止' : '启动'}
                       </button>
                       <button className="exp-mini" onClick={ev => doEdit(e, ev)}>编辑</button>
+                      <button className="exp-mini" onClick={ev => doSkills(e, ev)}>技能</button>
                       <button className="exp-mini exp-danger" onClick={ev => doDelete(e, ev)}>删除</button>
                     </span>
                   ) : (
@@ -190,6 +198,9 @@ export default function Experts({ user, onSummon }) {
           </div>
         )}
       </div>
+      {sklOf && (
+        <SkillPanel agent={sklOf} onClose={() => { setSklOf(null); refresh() }} />
+      )}
       {form && (
         <ExpertForm
           initial={form.agentID ? form : null}

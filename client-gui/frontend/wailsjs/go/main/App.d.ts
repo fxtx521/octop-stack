@@ -47,6 +47,12 @@ export function Resume(arg1:string,arg2:string,arg3:string):Promise<main.AskResu
 
 export function SetWorkspace(arg1:string):Promise<Record<string, any>>;
 
+export function SkillCreate(arg1:string,arg2:string,arg3:string,arg4:string):Promise<Record<string, any>>;
+
+export function SkillDelete(arg1:string,arg2:string):Promise<Record<string, any>>;
+
+export function SkillList(arg1:string):Promise<Array<Record<string, any>>>;
+
 export function StartupWorkspace():Promise<Record<string, any>>;
 
 export function TryResume():Promise<main.LoginResult>;

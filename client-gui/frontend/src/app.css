@@ -446,3 +446,19 @@
 .exf-btn { border:1px solid var(--line,#e3e6ea); background:#fff; border-radius:8px;
   padding:6px 16px; font-size:13px; cursor:pointer; }
 .exf-ok { background:var(--brand,#10a37f); color:#fff; border:0; }
+
+/* ---- 技能库面板 ---- */
+.exf-wide { width: 520px; max-height: 76vh; overflow-y: auto; }
+.skl-form { margin-bottom: 10px; }
+.skl-tall { height: 130px; }
+.skl-list { margin-top: 8px; }
+.skl-row { display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--line,#eceef1); }
+.skl-row:last-child { border-bottom: 0; }
+.skl-emoji { font-size: 16px; }
+.skl-main { flex: 1; min-width: 0; }
+.skl-name { font-size: 13px; color: #1f2328; display: flex; align-items: center; gap: 6px; }
+.skl-kind { font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  background: #f1f3f5; color: #8b949e; }
+.skl-kind.b { background: #e6f6f0; color: #0e8a68; }
+.skl-desc { font-size: 11px; color: #8b949e; margin-top: 2px; }

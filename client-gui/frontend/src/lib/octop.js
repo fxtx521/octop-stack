@@ -26,4 +26,8 @@ export const api = {
   agentUpdate: (id, fields) => A().AgentUpdate(id, JSON.stringify(fields)),
   agentToggle: (id, action) => A().AgentToggle(id, action),
   agentDelete: (id) => A().AgentDelete(id),
+  // 技能库(官方 /api/agents/{id}/skills)
+  skillList: (agentID) => A().SkillList(agentID || 'main'),
+  skillCreate: (agentID, slug, desc, body) => A().SkillCreate(agentID, slug, desc, body),
+  skillDelete: (agentID, slug) => A().SkillDelete(agentID, slug),
 }

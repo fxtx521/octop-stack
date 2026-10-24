@@ -90,6 +90,18 @@ export function SetWorkspace(arg1) {
   return window['go']['main']['App']['SetWorkspace'](arg1);
 }
 
+export function SkillCreate(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['SkillCreate'](arg1, arg2, arg3, arg4);
+}
+
+export function SkillDelete(arg1, arg2) {
+  return window['go']['main']['App']['SkillDelete'](arg1, arg2);
+}
+
+export function SkillList(arg1) {
+  return window['go']['main']['App']['SkillList'](arg1);
+}
+
 export function StartupWorkspace() {
   return window['go']['main']['App']['StartupWorkspace']();
 }
