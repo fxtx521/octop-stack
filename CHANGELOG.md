@@ -6,6 +6,42 @@ All notable changes to the Octop Workbench client are documented here.
 > 格式：每个版本先完整中文说明，后完整英文说明。
 > Format: full Chinese notes first, then full English notes, per release.
 
+## [v0.6.0] - 2026-10-25
+
+### 中文说明
+
+#### 新增
+
+- 专家实例管理：专家广场新增管理视图，可直接新建、编辑、启动/停止、删除专家实例（直连云端 /api/agents），新建专家即时可用，无需登云端后台。
+- 技能库面板：每张专家卡片新增「技能」入口，列出内置与自定义技能，支持新建（技能标识/一句话说明/技能正文）与删除，自定义技能即时生效（/api/agents/{id}/skills）。
+- 本地能力 · 授权目录（A 档）：侧栏新增「授权目录」面板，加入清单的目录允许专家用绝对路径读写（每个操作仍需批准）；清单外一律拒绝；符号链接展开校验防绕过；已授权目录自动注入对话提示词，专家清楚自己的边界。
+- 本地能力 · 命令执行（B 档）：授权目录面板内新增开关，默认关闭。开启后专家可提请执行系统命令，每条弹出审批卡展示完整命令与理由；高危命令（删除系统目录/关机重启/磁盘写入/管道执行远程脚本等）即使已批准也强制拒绝；命令执行 30 秒超时保护；所有命令（含被拒的）写入本地审计日志。
+- 管理后台 · 用户管理：新增「用户」页，全量用户列表支持设为管理员/成员、启用/禁用、清除登录锁定，展示角色与配额。
+- 管理后台 · 模型供应商：新增「供应商」页，支持接入 OpenAI 兼容供应商（名称/Base URL/API Key/模型列表）、启用/停用、删除；API Key 以掩码显示（仅露前 6 后 4 位），不泄露明文。
+
+#### 修复
+
+- 修复确认对话框在 Wails WebView 内静默失效的问题：window.confirm 在 WKWebView 中不弹窗且直接返回取消，导致删除任务/专家/技能/供应商与各项开关点击无响应。全部改为两段式确认按钮（第一次点变「确认?」态，3 秒内再点才执行）。
+- 修复专家卡片字段名不一致（云端 agent_id 与前端 agentID）导致的按钮点穿、误触发召唤。
+- 修复技能面板按钮误触发专家召唤（补事件阻止冒泡）。
+
+### English Notes
+
+#### Added
+
+- Expert instance management: new management view in Expert Plaza to create, edit, start/stop and delete expert instances directly (via /api/agents); newly created experts are usable immediately without opening the cloud console.
+- Skill panel: each expert card now has a "Skills" entry listing builtin and custom skills, with create (slug/one-line description/body) and delete; custom skills take effect instantly (/api/agents/{id}/skills).
+- Local capability · Allowed directories (Tier A): new sidebar "Allowed Directories" panel. Experts may read/write files by absolute path inside listed directories (every operation still requires approval); anything outside is rejected; symlinks are resolved to prevent escape; the allowed list is injected into the conversation so experts know their boundary.
+- Local capability · Shell execution (Tier B): a toggle in the Allowed Directories panel, off by default. When enabled, experts can propose shell commands; each command shows an approval card with the full command and reason; high-risk commands (system-wide deletion, shutdown/reboot, raw disk writes, piping remote scripts, etc.) are rejected even if approved; 30s timeout per command; every command (including rejected ones) is written to a local audit log.
+- Admin console · Users: new "Users" tab with the full user list — promote/demote admin, enable/disable, clear login lockout, with role and quota display.
+- Admin console · Model providers: new "Providers" tab to add OpenAI-compatible providers (name / base URL / API key / model list), enable/disable and delete; API keys are masked (first 6 and last 4 characters only).
+
+#### Fixed
+
+- Confirmation dialogs silently failing inside the Wails WebView: window.confirm does not render in WKWebView and always returns false, making task/expert/skill/provider deletion and toggles unresponsive. Replaced with a two-step confirm button (first click arms it as "Confirm?", second click within 3 seconds executes).
+- Expert cards mixing agent_id (server) and agentID (frontend), which caused click-through and accidental summoning.
+- Skill panel buttons bubbling up and accidentally summoning the expert.
+
 ## [v0.5.0] - 2026-10-24
 
 ### 中文说明
