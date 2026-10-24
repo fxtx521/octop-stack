@@ -1,77 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>Octop 企业AI工作台</title>
-<link rel="stylesheet" href="/src/style.css">
+  <meta charset="UTF-8">
+  <title>Octop 企业AI工作台</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-<!-- 登录页 -->
-<div id="login" class="page">
-  <div class="login-card">
-    <div class="logo">Octop<span class="dot">.</span></div>
-    <div class="sub">企业 AI 工作台 · 本地化部署</div>
-    <input id="srv" value="http://127.0.0.1:8099" placeholder="服务器地址" onkeydown="if(event.key==='Enter')doLogin()">
-    <input id="user" placeholder="账号" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
-    <input id="pass" type="password" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
-    <button id="btnLogin" onclick="doLogin()">登 录</button>
-    <div id="loginErr" class="err"></div>
-  </div>
-</div>
-
-<!-- 主界面: 三栏 WorkBuddy 风格 -->
-<div id="main" class="page hidden">
-  <!-- 左栏: 任务列表 -->
-  <div class="sidebar">
-    <div class="sb-brand">Octop<span class="dot">.</span></div>
-    <button class="new-task" onclick="newTask()">＋ 新任务</button>
-    <div class="sb-label">任务</div>
-    <div id="taskList" class="task-list"></div>
-    <div class="sb-bottom">
-      <button id="adminBtn" class="sb-admin hidden" onclick="openAdmin()">⚙ 管理后台</button>
-      <div class="sb-user"><span id="whoami" class="muted"></span>
-        <a href="javascript:logout()" class="logout">退出</a></div>
-    </div>
-  </div>
-
-  <!-- 中栏: 对话 -->
-  <div class="chatwrap">
-    <div class="chat-top">
-      <span id="taskTitle" class="task-title">新任务</span>
-      <span class="spacer"></span>
-      <span id="expertName" class="muted"></span>
-      <span id="usage" class="bill muted"></span>
-      <button class="ghost" onclick="pickWS()">📁 项目目录</button>
-      <span id="wsName" class="muted"></span>
-    </div>
-    <div id="chat" class="chat"></div>
-    <div class="inputbar">
-      <input id="msg" placeholder="输入消息, 回车发送 (AI 可读写项目目录内的文件)" onkeydown="if(event.key==='Enter')send()">
-      <button onclick="send()">发送</button>
-    </div>
-  </div>
-
-  <!-- 右栏: 文件 / 变更 -->
-  <div class="resultwrap">
-    <div class="tabs">
-      <button class="tab active" data-tab="files" onclick="switchTab('files')">文件</button>
-      <button class="tab" data-tab="changes" onclick="switchTab('changes')">变更</button>
-      <button class="tab hidden" data-tab="admin" id="adminTab" onclick="switchTab('admin')">后台</button>
-    </div>
-    <div id="tab-files" class="tabpane">
-      <div class="file-list" id="files"><span class="muted">未选择目录</span></div>
-      <div class="preview-head" id="pvName">点击文件预览内容</div>
-      <pre class="preview" id="preview">…</pre>
-    </div>
-    <div id="tab-changes" class="tabpane hidden">
-      <div id="changes" class="changes muted">暂无变更记录</div>
-    </div>
-    <div id="tab-admin" class="tabpane hidden">
-      <div id="adminPane" class="adminpane muted">仅管理员可见</div>
-    </div>
-  </div>
-</div>
-<script src="./src/main.js" type="module"></script>
+  <div id="app"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>

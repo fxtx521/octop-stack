@@ -1,0 +1,53 @@
+/* ============================================================
+   Octop 工作台 · React 版设计系统
+   Token 源: WorkBuddy 5.8.3 界面实测 (自研实现)
+   ============================================================ */
+:root {
+  --surface: #181b20;
+  --side: #202226;
+  --side-deep: #1b1d21;
+  --panel: #23252b;
+  --panel-2: #2a2d34;
+  --raise: #2e3139;
+  --border: #2e3138;
+  --border-soft: #272a30;
+  --text: #d6d9df;
+  --text-strong: #f2f4f7;
+  --muted: #9298a2;
+  --faint: #62676f;
+  --primary: #6c4dff;
+  --primary-hover: #7e63ff;
+  --primary-soft: rgba(108, 77, 255, 0.13);
+  --accent: #00c29a;
+  --accent-soft: rgba(0, 194, 154, 0.12);
+  --danger: #ff5c5c;
+  --danger-soft: rgba(255, 92, 92, 0.1);
+  --warn: #f5a623;
+  --warn-soft: rgba(245, 166, 35, 0.09);
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 12px;
+  --font: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "SF Mono", Menlo, monospace;
+  --shadow-pop: 0 8px 28px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+input, textarea { user-select: text; font-family: var(--font); }
+button { font-family: var(--font); cursor: pointer; }
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-thumb { background: #363a42; border-radius: 5px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #454a53; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+.hidden { display: none !important; }
+.spacer { flex: 1; }
