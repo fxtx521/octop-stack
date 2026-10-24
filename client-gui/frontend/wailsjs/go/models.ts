@@ -34,6 +34,20 @@ export namespace core {
 	        this.reason = source["reason"];
 	    }
 	}
+	export class ShOp {
+	    cmd: string;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ShOp(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.cmd = source["cmd"];
+	        this.reason = source["reason"];
+	    }
+	}
 
 }
 
@@ -97,6 +111,7 @@ export namespace main {
 	    answer: string;
 	    thread: string;
 	    ops: core.FileOp[];
+	    shops: core.ShOp[];
 	
 	    static createFrom(source: any = {}) {
 	        return new AskResult(source);
@@ -109,6 +124,7 @@ export namespace main {
 	        this.answer = source["answer"];
 	        this.thread = source["thread"];
 	        this.ops = this.convertValues(source["ops"], core.FileOp);
+	        this.shops = this.convertValues(source["shops"], core.ShOp);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

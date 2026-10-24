@@ -62,6 +62,10 @@ export function Apply(arg1, arg2) {
   return window['go']['main']['App']['Apply'](arg1, arg2);
 }
 
+export function ApplySh(arg1, arg2) {
+  return window['go']['main']['App']['ApplySh'](arg1, arg2);
+}
+
 export function Ask(arg1, arg2, arg3) {
   return window['go']['main']['App']['Ask'](arg1, arg2, arg3);
 }
@@ -116,6 +120,14 @@ export function Resume(arg1, arg2, arg3) {
 
 export function SetWorkspace(arg1) {
   return window['go']['main']['App']['SetWorkspace'](arg1);
+}
+
+export function ShellState() {
+  return window['go']['main']['App']['ShellState']();
+}
+
+export function ShellToggle(arg1) {
+  return window['go']['main']['App']['ShellToggle'](arg1);
 }
 
 export function SkillCreate(arg1, arg2, arg3, arg4) {

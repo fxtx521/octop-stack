@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../lib/octop.js'
+import { useConfirm } from './confirm.js'
 
 // key掩码: 只露前6后4, 防明文泄露
 function maskKey(k) {
@@ -66,6 +67,7 @@ export function AdminUsers() {
 export function AdminProviders() {
   const [rows, setRows] = useState(null)
   const [msg, setMsg] = useState('')
+  const [pendDel, guardDel] = useConfirm()
   const [creating, setCreating] = useState(false)
   const [f, setF] = useState({ name: '', base_url: '', api_key: '', models: '' })
   const load = async () => setRows(await api.providersList() || [])
@@ -84,12 +86,11 @@ export function AdminProviders() {
   }
   const toggle = (p) => api.providerPatch(p.id, JSON.stringify({ enabled: !p.enabled }))
     .then(r => { setMsg(r?.ok ? '' : (r?.error || '操作失败')); load() })
-  const del = async (p) => {
-    if (!window.confirm(`删除供应商「${p.name}」? 使用它的专家会被影响`)) return
+  const del = (p) => guardDel('del-' + p.id, async () => {
     const r = await api.providerDelete(p.id)
     setMsg(r?.ok ? '已删除' : (r?.error || '删除失败'))
     load()
-  }
+  })()
   return (
     <div className="adm-wrap">
       {msg && <div className="tree-empty">{msg}</div>}
@@ -129,7 +130,9 @@ export function AdminProviders() {
           </div>
           <div className="exp-ops">
             <button className="exp-mini" onClick={() => toggle(p)}>{p.enabled ? '停用' : '启用'}</button>
-            <button className="exp-mini exp-danger" onClick={() => del(p)}>删除</button>
+            <button className="exp-mini exp-danger" onClick={() => del(p)}>
+              {pendDel === 'del-' + p.id ? '确认删除?' : '删除'}
+            </button>
           </div>
         </div>
       ))}

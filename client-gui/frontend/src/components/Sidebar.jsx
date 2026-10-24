@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import AllowedDirs from './AllowedDirs.jsx'
+import { useConfirm } from './confirm.js'
 
 const NAV = [
   { id: 'chat', ic: '✚', label: '新建任务' },
@@ -16,6 +17,7 @@ export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen
   const [editId, setEditId] = useState(null)
   const [draft, setDraft] = useState('')
   const [showAllowed, setShowAllowed] = useState(false)
+  const [pendDel, guardDel] = useConfirm()
   return (
     <aside className="sb">
       <div className="sb-top">
@@ -81,9 +83,10 @@ export default function Sidebar({ user, tasks, curId, view, onNav, onNew, onOpen
             >✎</button>
             <button
               className="sb-task-del"
-              onClick={e => { e.stopPropagation(); if (window.confirm('删除任务「' + t.title + '」?')) onDelete(t.id) }}
+              onClick={e => { e.stopPropagation(); guardDel('del-' + t.id, () => onDelete(t.id))() }}
+              title={pendDel === 'del-' + t.id ? '再点一次确认' : '删除'}
               title="删除"
-            >×</button>
+            >{pendDel === 'del-' + t.id ? '!' : '×'}</button>
           </div>
         ))}
       </div>

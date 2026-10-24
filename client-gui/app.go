@@ -1,6 +1,7 @@
 package main
 
 import (
+	"time"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -50,6 +51,7 @@ type AskResult struct {
 	Answer string        `json:"answer"`
 	Thread string        `json:"thread"`
 	Ops    []core.FileOp `json:"ops"`
+	Shops  []core.ShOp   `json:"shops"`
 }
 
 type OpResult2 struct {
@@ -239,6 +241,7 @@ type prefFile struct {
 	LastWorkspace string   `json:"last_workspace"`
 	Session       *session `json:"session,omitempty"`
 	AllowedDirs   []string `json:"allowed_dirs,omitempty"` // A档: 全盘授权目录清单
+	AllowShell    bool     `json:"allow_shell,omitempty"`  // B档: 命令执行开关(默认关)
 }
 
 func (a *App) readPref() prefFile {
@@ -282,6 +285,9 @@ func (a *App) Ask(expertID, threadID, message string) AskResult {
 			msg += "\n授权目录外的绝对路径一律会被拒绝; 工作区内仍用相对路径。"
 		}
 	}
+	if a.WSRoot != "" && a.readPref().AllowShell {
+		msg += "\n\n[命令执行]\n用户已开启命令执行授权。如需在本机执行命令, 在回答末尾用 ```shops 代码块输出JSON数组(cmd/reason), 如 {\"cmd\":\"ls -la\",\"reason\":\"查看目录结构\"}。每条命令都要用户批准后才会执行, 高危命令会被强制拒绝。不需要就不输出。"
+	}
 	var answer, thread string
 	var err error
 	if threadID != "" {
@@ -296,7 +302,8 @@ func (a *App) Ask(expertID, threadID, message string) AskResult {
 			return AskResult{Msg: err.Error()}
 		}
 	}
-	return AskResult{OK: true, Answer: answer, Thread: thread, Ops: core.ParseOps(answer)}
+	return AskResult{OK: true, Answer: answer, Thread: thread,
+		Ops: core.ParseOps(answer), Shops: core.ParseShOps(answer)}
 }
 
 // Resume 续指定任务的thread(如喂read结果)
@@ -673,4 +680,33 @@ func (a *App) ProviderDelete(id int) map[string]any {
 		return map[string]any{"ok": false, "error": err.Error()}
 	}
 	return map[string]any{"ok": true}
+}
+
+// ---- B档: 命令执行(默认关, 开关+审批+黑名单+留痕) ----
+
+func (a *App) ShellState() bool {
+	return a.readPref().AllowShell
+}
+
+func (a *App) ShellToggle(on bool) map[string]any {
+	pref := a.readPref()
+	pref.AllowShell = on
+	a.writePref(pref)
+	return map[string]any{"ok": true, "on": on}
+}
+
+// ApplySh 用户批准后执行命令计划(黑名单/超时/留痕都在core)
+func (a *App) ApplySh(opsJSON string, approved bool) map[string]any {
+	var ops []core.ShOp
+	if err := json.Unmarshal([]byte(opsJSON), &ops); err != nil {
+		return map[string]any{"ok": false, "error": err.Error()}
+	}
+	results := core.ExecuteShOps(a.WSRoot, a.loadSession().Username, a.Expert, ops, approved, 30*time.Second)
+	feedback := ""
+	for _, r := range results {
+		if r.Status == "done" && r.Output != "" {
+			feedback += "\n[命令 " + r.Cmd + " 输出]\n" + r.Output + "\n"
+		}
+	}
+	return map[string]any{"ok": true, "results": results, "feedback": feedback}
 }

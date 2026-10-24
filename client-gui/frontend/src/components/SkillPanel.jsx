@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../lib/octop.js'
+import { useConfirm } from './confirm.js'
 
 // 技能面板: 列出专家全部技能, 支持新建/删除(workspace技能)
 export default function SkillPanel({ agent, onClose }) {
@@ -9,6 +10,7 @@ export default function SkillPanel({ agent, onClose }) {
   const [creating, setCreating] = useState(false)
   const [f, setF] = useState({ slug: '', description: '', body: '' })
   const [busy, setBusy] = useState(false)
+  const [pending, guard] = useConfirm()
   const load = async () => {
     const r = await api.skillList(agentID)
     setRows(Array.isArray(r) ? r : [])
@@ -23,12 +25,11 @@ export default function SkillPanel({ agent, onClose }) {
     else setErr(r?.error || '保存失败')
     setBusy(false)
   }
-  const del = async (slug) => {
-    if (!window.confirm(`删除技能「${slug}」?`)) return
+  const del = (slug) => guard('del-' + slug, async () => {
     const r = await api.skillDelete(agentID, slug)
     setErr(r?.ok ? '' : (r?.error || '删除失败'))
     load()
-  }
+  })()
   return (
     <div className="exf-mask" onClick={onClose}>
       <div className="exf-card exf-wide" onClick={e => e.stopPropagation()}>
@@ -68,7 +69,9 @@ export default function SkillPanel({ agent, onClose }) {
                 <div className="skl-desc">{s.description || s.summary?.zh || ''}</div>
               </div>
               {s.kind !== 'builtin' && (
-                <button className="exp-mini exp-danger" onClick={() => del(s.slug)}>删除</button>
+                <button className="exp-mini exp-danger" onClick={del(s.slug)}>
+                  {pending === 'del-' + s.slug ? '确认删除?' : '删除'}
+                </button>
               )}
             </div>
           ))}

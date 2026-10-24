@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/octop.js'
 import SkillPanel from './SkillPanel.jsx'
+import { useConfirm } from './confirm.js'
 
 function tagsOf(e) {
   // 专家数据里 skills/tags 形态不一, 兜底提取展示标签
@@ -83,6 +84,7 @@ export default function Experts({ user, onSummon }) {
   const [rows, setRows] = useState([]) // /api/agents 原始行(state/agentID)
   const [form, setForm] = useState(null) // null | {} 新建 | agent 编辑
   const [sklOf, setSklOf] = useState(null) // 技能面板针对的专家
+  const [pendDel, guardDel] = useConfirm()
   const [msg, setMsg] = useState('')
   const refresh = async () => {
     try {
@@ -118,14 +120,15 @@ export default function Experts({ user, onSummon }) {
     setMsg(r?.ok ? '' : (r?.error || '操作失败'))
     refresh()
   }
-  const doDelete = async (e, ev) => {
+  const doDelete = (e, ev) => {
     ev.stopPropagation()
     const id = e.agent_id || e.agentID
     if (!id) { setMsg('该专家无实例ID, 无法删除'); return }
-    if (!window.confirm(`删除专家「${e.name}」? 其会话历史保留在云端`)) return
-    const r = await api.agentDelete(id)
-    setMsg(r?.ok ? '' : (r?.error || '删除失败'))
-    refresh()
+    guardDel('del-' + id, async () => {
+      const r = await api.agentDelete(id)
+      setMsg(r?.ok ? '' : (r?.error || '删除失败'))
+      refresh()
+    })()
   }
   const doEdit = (e, ev) => {
     ev.stopPropagation()
@@ -187,7 +190,9 @@ export default function Experts({ user, onSummon }) {
                       </button>
                       <button className="exp-mini" onClick={ev => doEdit(e, ev)}>编辑</button>
                       <button className="exp-mini" onClick={ev => doSkills(e, ev)}>技能</button>
-                      <button className="exp-mini exp-danger" onClick={ev => doDelete(e, ev)}>删除</button>
+                      <button className="exp-mini exp-danger" onClick={ev => doDelete(e, ev)}>
+                        {pendDel === 'del-' + (e.agent_id || e.agentID) ? '确认删除?' : '删除'}
+                      </button>
                     </span>
                   ) : (
                     <button className="exp-call" onClick={ev => { ev.stopPropagation(); onSummon(e) }}>召唤</button>

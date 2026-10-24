@@ -45,6 +45,7 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
         thread: r.thread || task.thread || '',
         msgs: [...msgs, ...add],
         pending: (r.ops && r.ops.length ? r.ops : []),
+        pendingSh: (r.shops && r.shops.length ? r.shops : []),
       })
     } catch (e) {
       patchTask(task.id, { busy: false, msgs: [...msgs, { role: 'sys', text: '网络错误: ' + e }] })
@@ -52,12 +53,29 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
   }
 
   async function approve(ops, ok) {
+    const isSh = !Array.isArray(ops) || (ops.length && ops[0].cmd !== undefined)
     patchTask(task.id, {
-      msgs: [...task.msgs, { role: 'sys', text: (ok ? '已批准' : '已拒绝') + ' ' + ops.length + ' 个文件操作' }],
+      msgs: [...task.msgs, { role: 'sys', text: (ok ? '已批准' : '已拒绝') + ' ' + ops.length + (isSh ? ' 条命令' : ' 个文件操作') }],
       pending: [],
+      pendingSh: [],
       busy: true,
     })
     try {
+      if (isSh) {
+        const r = await api.applySh(ops, ok)
+        const add = []
+        if (r.results?.length) {
+          add.push({ role: 'sys', text: r.results.map(x => 'sh ' + x.cmd.slice(0, 60) + ' → ' + x.status + (x.detail ? ' (' + x.detail.slice(0, 80) + ')' : '')).join('\n') })
+        }
+        if (ok && r.feedback) {
+          const r2 = await api.resume(task.expert, task.thread, '[客户端已执行命令] 结果如下, 请继续你的任务(还需执行继续输出shops):\n' + r.feedback)
+          if (r2.answer) add.push({ role: 'ai', text: r2.answer })
+          patchTask(task.id, { busy: false, thread: r2.thread || task.thread || '', msgs: [...task.msgs, ...add], pending: r2.ops?.length ? r2.ops : [], pendingSh: r2.shops?.length ? r2.shops : [] })
+          return
+        }
+        patchTask(task.id, { busy: false, msgs: [...task.msgs, ...add] })
+        return
+      }
       const r = await api.apply(ops, ok)
       const add = []
       if (r.results?.length) {
@@ -118,6 +136,9 @@ export default function ChatPane({ user, task, patchTask, onOpenFiles }) {
           {task.pending.map((op, idx) => (
             <ApprovalCard key={'ap' + idx} op={op} idx={idx} ops={task.pending} onDecide={approve} />
           ))}
+          {task.pendingSh && task.pendingSh.length > 0 && (
+            <ShCard ops={task.pendingSh} onDecide={approve} />
+          )}
           {task.busy && <div className="msg-busy"><i /><i /><i /> 它正在干活…</div>}
         </div>
       </div>
@@ -214,4 +235,23 @@ function shortPath(p) {
   if (!p) return ''
   const parts = p.replace(/\/+$/, '').split('/')
   return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : p
+}
+
+// 命令执行审批卡(B档): 展示完整命令+理由, 全批/全拒
+function ShCard({ ops, onDecide }) {
+  return (
+    <div className="ap-card">
+      <div className="ap-title">⚡ 专家想执行 {ops.length} 条系统命令(每条已留痕, 高危强制拒绝)</div>
+      {ops.map((o, i) => (
+        <div key={i} className="ap-item">
+          <code className="ap-path">{'$ ' + o.cmd}</code>
+          <div className="ap-desc">{o.reason || ''}</div>
+        </div>
+      ))}
+      <div className="ap-btns">
+        <button className="ap-btn" onClick={() => onDecide(ops, false)}>全部拒绝</button>
+        <button className="ap-btn ap-yes" onClick={() => onDecide(ops, true)}>全部批准</button>
+      </div>
+    </div>
+  )
 }

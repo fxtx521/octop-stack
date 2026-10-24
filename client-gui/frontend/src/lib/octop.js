@@ -42,4 +42,8 @@ export const api = {
   providerCreate: (name, kind, url, key, models) => A().ProviderCreate(name, kind, url, key, models || ''),
   providerPatch: (id, fields) => A().ProviderPatch(id, JSON.stringify(fields)),
   providerDelete: (id) => A().ProviderDelete(id),
+  // B档命令执行
+  shellState: () => A().ShellState(),
+  shellToggle: (on) => A().ShellToggle(!!on),
+  applySh: (ops, ok) => A().ApplySh(JSON.stringify(ops), !!ok),
 }

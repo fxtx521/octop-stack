@@ -33,6 +33,8 @@ export function AllowedRemove(arg1:string):Promise<Record<string, any>>;
 
 export function Apply(arg1:string,arg2:boolean):Promise<main.ApplyResult>;
 
+export function ApplySh(arg1:string,arg2:boolean):Promise<Record<string, any>>;
+
 export function Ask(arg1:string,arg2:string,arg3:string):Promise<main.AskResult>;
 
 export function ClearSession():Promise<void>;
@@ -60,6 +62,10 @@ export function ReadFile(arg1:string):Promise<Record<string, any>>;
 export function Resume(arg1:string,arg2:string,arg3:string):Promise<main.AskResult>;
 
 export function SetWorkspace(arg1:string):Promise<Record<string, any>>;
+
+export function ShellState():Promise<boolean>;
+
+export function ShellToggle(arg1:boolean):Promise<Record<string, any>>;
 
 export function SkillCreate(arg1:string,arg2:string,arg3:string,arg4:string):Promise<Record<string, any>>;
 
