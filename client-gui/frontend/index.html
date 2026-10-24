@@ -10,11 +10,11 @@
 <!-- 登录页 -->
 <div id="login" class="page">
   <div class="login-card">
-    <div class="logo">Octop</div>
+    <div class="logo">Octop<span class="dot">.</span></div>
     <div class="sub">企业 AI 工作台 · 本地化部署</div>
-    <input id="srv" value="http://127.0.0.1:8099" placeholder="服务器地址">
-    <input id="user" placeholder="账号" autocomplete="off">
-    <input id="pass" type="password" placeholder="密码">
+    <input id="srv" value="http://127.0.0.1:8099" placeholder="服务器地址" onkeydown="if(event.key==='Enter')doLogin()">
+    <input id="user" placeholder="账号" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()">
+    <input id="pass" type="password" placeholder="密码" onkeydown="if(event.key==='Enter')doLogin()">
     <button id="btnLogin" onclick="doLogin()">登 录</button>
     <div id="loginErr" class="err"></div>
   </div>
@@ -24,7 +24,7 @@
 <div id="main" class="page hidden">
   <!-- 左栏: 任务列表 -->
   <div class="sidebar">
-    <div class="sb-brand">Octop</div>
+    <div class="sb-brand">Octop<span class="dot">.</span></div>
     <button class="new-task" onclick="newTask()">＋ 新任务</button>
     <div class="sb-label">任务</div>
     <div id="taskList" class="task-list"></div>
